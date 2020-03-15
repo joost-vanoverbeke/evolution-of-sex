@@ -247,22 +247,6 @@ class Sites {
         patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
                 comm.minEnv,
                 comm.maxEnv);
-        changeMicrositeEnv(p, d);
-    }
-
-    void changeMicrositeEnv(int p, int d) {
-        for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
-            environment[m][d] = patchDimEnv[p][d] + (Auxils.random.nextGaussian() * comm.sigmaE);
-            if (alive[m]) {
-                fitness[m] = 1;
-                for (int tr = 0; tr < comm.traits; tr++) {
-                    if (comm.traitDim[tr] == d) {
-                        traitFitness[m][tr] = Math.exp(-(Math.pow(traitFenotype[m][tr] - environment[m][d], 2)) / evol.divF);
-                    }
-                    fitness[m] *= traitFitness[m][tr];
-                }
-            }
-        }
     }
 
 

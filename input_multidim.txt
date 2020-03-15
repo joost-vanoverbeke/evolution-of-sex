@@ -10,7 +10,6 @@ ENVDIMS		        2											number of niche dimensions (default = 1)
 TRAITS		        4											number of traits (default = 2)
 MINENV              -1                                      	minimum environmental value (between 0 and 1) (default = 0.2)
 MAXENV              1                                      	maximum environmental value (between 0 and 1) (default = 0.8)
-SIGMAE              0.0                                     	microsite environment standard deviation (default = 0.0)
 MICROSITES          400    										number of microsites in each patch (default = 600)
 D                   0.1                                      	mortality rate (default = 0.1)
 PSEX 	            0.0											initial probability of sexual reproduction (default = 0)
@@ -20,7 +19,7 @@ ENVTYPE				LOCAL
 ENVSYNC				NO
 PCHANGE		        0.1											probability of environmental change along each niche dimension (default = 0.1)
 ENVSTEP		    1   0.05										    step size of environmental change (default = 0.01)
-PEXT            1   0.01	                                     	extinction rate of patch communities  (default = 0)
+PEXT            1   0.0	                                     	extinction rate of patch communities  (default = 0)
 M               1   0.0		                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
 RHO                 1                                        	scaling factor determining the width of the dispersal kernel  (default = 1)
 
@@ -34,7 +33,7 @@ SIGMAZ              0.01                                     	fenotypic standard
 
 
 run parameters
-RUNS                2                                        	number of replicate runs (default = 1)
+RUNS                1                                        	number of replicate runs (default = 1)
 TIMESTEPS           1000                                    	number of time steps in a run (default = 10000)
 PRINTSTEPS          100		                               	time steps between console output (default = 100)
 SAVESTEPS           100                                    	time steps between generation of output (default = 1000)
