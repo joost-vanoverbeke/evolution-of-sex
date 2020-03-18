@@ -1,14 +1,15 @@
 
 
-//import java.util.Arrays;
+import org.apache.commons.rng.UniformRandomProvider;
+import org.apache.commons.rng.sampling.CombinationSampler;
+import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler.Binomial;
+import org.apache.commons.rng.sampling.distribution.NormalizedGaussianSampler;
+import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
+import org.apache.commons.rng.sampling.distribution.ZigguratNormalizedGaussianSampler;
+import org.apache.commons.rng.simple.RandomSource;
 
-import java.util.Objects;
-import java.util.Random;
-import java.io.FileReader;
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.Arrays;
 
 
 /* class EvolvingMetacommunity
@@ -48,6 +49,7 @@ public class EvolSex {
 
                                 comm.init();
                                 evol.init(comm);
+                                Auxils.init(evol);
                                 Init init = new Init(comm);
 
                                 Sites sites = new Sites(comm, evol, init, dc, es, pe, dr);
@@ -186,7 +188,7 @@ class Sites {
             for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
                 patch[m] = p;
                 for (int d = 0; d < comm.envDims; d++)
-                    environment[m][d] = patchDimEnv[p][d] + (Auxils.random.nextGaussian() * comm.sigmaE);
+                    environment[m][d] = patchDimEnv[p][d] + (Auxils.gaussianSampler.sample() * comm.sigmaE);
             }
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
@@ -203,7 +205,7 @@ class Sites {
 // sex - asex switch
 //                		genotype[m][l] =  init.pSex < 0.5 ? 0 : 1;
                     }
-                    traitFenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.random.nextGaussian() * evol.sigmaZ);
+                    traitFenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
                     traitFitness[m][tr] = Math.exp(-(Math.pow(traitFenotype[m][tr] - environment[m][comm.traitDim[tr]], 2)) / evol.divF);
                     fitness[m] *= traitFitness[m][tr];
                 }
@@ -222,21 +224,64 @@ class Sites {
                     alive[i] = false;
     }
 
-    void changeEnvironment() {
-        boolean syncEnv = comm.envSync.equals("YES");
-        boolean globalEnv = comm.envType.equals("GLOBAL");
-        boolean syncChange = Auxils.random.nextDouble() <= comm.pChange;
-        boolean globalChange = false;
-        double globalStep = 0;
-        double step;
 
-        for (int d = 0; d < comm.envDims; d++) {
-            if (globalEnv) globalChange = Auxils.random.nextDouble() <= comm.pChange;
-            if (globalEnv && globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
-            for (int p = 0; p < comm.nbrPatches; p++) {
-                if (syncEnv ? syncChange : (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange))) {
-                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
-                    changePatchDimEnv(p, d, step);
+    void changeEnvironment()
+    {
+        double step;
+        if (comm.envSync.equals("YES")) {
+            if (Auxils.random.nextDouble() <= comm.pChange) {
+                for (int d = 0; d < comm.envDims; d++) {
+                    if (comm.envType.equals("GLOBAL")) {
+                        step = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+                        for (int p = 0; p < comm.nbrPatches; p++) {
+                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
+                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
+                                    comm.minEnv,
+                                    comm.maxEnv);
+                        }
+                    } else {
+                        for (int p = 0; p < comm.nbrPatches; p++) {
+                            step = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
+                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
+                                    comm.minEnv,
+                                    comm.maxEnv);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int d = 0; d < comm.envDims; d++)
+            {
+                if (comm.envType.equals("GLOBAL"))
+                {
+                    if (Auxils.random.nextDouble() <= comm.pChange)
+                    {
+                        step = comm.envStep[esPos]*(Auxils.random.nextBoolean() ? -1 : 1);
+                        for (int p = 0; p < comm.nbrPatches; p++)
+                        {
+                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
+                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
+                                    comm.minEnv,
+                                    comm.maxEnv);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int p = 0; p < comm.nbrPatches; p++)
+                    {
+                        if (Auxils.random.nextDouble() <= comm.pChange)
+                        {
+                            step = comm.envStep[esPos]*(Auxils.random.nextBoolean() ? -1 : 1);
+                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
+                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
+                                    comm.minEnv,
+                                    comm.maxEnv);
+                        }
+                    }
                 }
             }
         }
@@ -248,7 +293,6 @@ class Sites {
                 comm.minEnv,
                 comm.maxEnv);
     }
-
 
     /* mortality
      * keeps also track of surviving individuals and empty microsites per patch for efficiency in further calculations of reproduction and dispersal */
@@ -308,9 +352,7 @@ class Sites {
     }
 
     void reproduction() {
-
         int[] sampleM;
-
         for (int p = 0; p < comm.nbrPatches; p++) {
             nbrSettled = nbrEmpty[p];
             if (nbrSettled > 0) {
@@ -331,6 +373,7 @@ class Sites {
         int posFather, nbrFathers, patchMother;
         int[] posFathers;
         double[] FathersProb;
+
         for (int i = 0; i < nbrSettled; i++) {
             alive[posOffspring[i]] = true;
             fitness[posOffspring[i]] = 1;
@@ -345,9 +388,9 @@ class Sites {
                 for (int f = startPosSample; f < (startPosSample + rangeSample); f++)
                     if (sexAdults[f]) {
                         posFathers[nbrFathers] = posAdults[f];
-                        //        					FathersProb[nbrFathers++] = adultsProb[f];
                         FathersProb[nbrFathers++] = adultsProb[p][f];
                     }
+
                 posFather = posFathers[Auxils.randIntProb(nbrFathers, FathersProb)];
                 inherit(posOffspring[i], posMothers[i], posFather);
                 // no selfing allowed
@@ -368,7 +411,7 @@ class Sites {
             mutate(posOffspring[i]);
 
             for (int tr = 0; tr < comm.traits; tr++) {
-                traitFenotype[posOffspring[i]][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.traitGenes[tr])) + (Auxils.random.nextGaussian() * evol.sigmaZ);
+                traitFenotype[posOffspring[i]][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
                 traitFitness[posOffspring[i]][tr] = Math.exp(-(Math.pow(traitFenotype[posOffspring[i]][tr] - environment[posOffspring[i]][comm.traitDim[tr]], 2)) / evol.divF);
                 fitness[posOffspring[i]] *= traitFitness[posOffspring[i]][tr];
             }
@@ -386,6 +429,7 @@ class Sites {
 
     /* inheritance for sexual reproduction (two parent) */
     void inherit(int posOffspring, int posMother, int posFather) {
+
         for (int l = 0; l < evol.allLoci; l++) {
             if (Auxils.random.nextBoolean())
                 genotype[posOffspring][evol.allMother[l]] = genotype[posMother][evol.allMother[l]];
@@ -399,35 +443,33 @@ class Sites {
     }
 
     void mutate(int posOffspring) {
+        int k;
+        double pSexTemp;
+        int[] somMutLocs, sexMutLocs;
 
-        for (int l : evol.somGenes) {
-            if (Auxils.random.nextDouble() <= evol.mutationRate)
+        k = Auxils.binomialSamplerSomatic.sample();
+        if (k > 0) {
+            CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.traitLoci*2, k);
+            somMutLocs = Auxils.arrayElements(evol.somGenes, combinationSampler.sample());
+            for (int l : somMutLocs) {
                 genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1) * evol.mutationSize;
-//    			genotype[posOffspring][l] += Auxils.random.nextGaussian()*0.5;
+            }
         }
 
-        double pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
-        for (int l : evol.sexGenes) {
-            if (Auxils.random.nextDouble() <= evol.mutationRate) {
+        k = Auxils.binomialSamplerSex.sample();
+        if (k > 0) {
+            pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
+            CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.sexLoci*2, k);
+            sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
+            for (int l : sexMutLocs) {
                 if (pSexTemp <= 0.)
                     genotype[posOffspring][l] += 1;
                 else if (pSexTemp >= 1.)
                     genotype[posOffspring][l] -= 1;
                 else
                     genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
-//    				genotype[posOffspring][l] += Auxils.random.nextGaussian()*0.5;
             }
         }
-
-// sex - asex switch    	
-//    	if (Auxils.random.nextDouble() <= evol.mutationRate) 
-//    	{
-//    		for (int l : evol.sexGenes) 
-//    		{
-//    			genotype[posOffspring][l] = (genotype[posOffspring][l] == 0) ? 1 : 0;
-//    		}
-//    	}
-
     }
 
     int metaPopSize() {
@@ -1075,7 +1117,15 @@ class Reader {
 
 /* Auxiliary functions for array calculations */
 class Auxils {
-    static Random random = new Random();
+    static UniformRandomProvider random = RandomSource.create(RandomSource.MT_64);
+    static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
+    static SharedStateDiscreteSampler binomialSamplerSomatic;
+    static SharedStateDiscreteSampler binomialSamplerSex;
+
+    static void init(Evol evol) {
+        binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
+        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRate);
+    }
 
     static void arrayShuffle(int[] array) {
         int index, temp;
@@ -1113,15 +1163,14 @@ class Auxils {
     //sampling with or without replacement
     static int[] arraySampleProb(int n, int[] array, double[] probs, boolean repl) {
         int pos;
-        double rand;
         int[] newElements;
         int[] newArr = new int[n];
         double[] cumProbs = probs.clone();
         arrayCumSum(cumProbs);
         arrayDiv(cumProbs, cumProbs[cumProbs.length - 1]);
         for (int i = 0; i < n; i++) {
-            rand = random.nextDouble();
-            pos = arraySearch(cumProbs, rand);
+            pos = Arrays.binarySearch(cumProbs, random.nextDouble());
+            pos = (pos >= 0) ? pos : (-pos - 1);
             newArr[i] = array[pos];
             if (!repl) {
                 newElements = arrayConcat(enumArray(0, pos - 1), enumArray(pos + 1, array.length - 1));
@@ -1137,15 +1186,14 @@ class Auxils {
     //sampling with or without replacement
     static double[] arraySampleProb(int n, double[] array, double[] probs, boolean repl) {
         int pos;
-        double rand;
         int[] newElements;
         double[] newArr = new double[n];
         double[] cumProbs = probs.clone();
         arrayCumSum(cumProbs);
         arrayDiv(cumProbs, cumProbs[cumProbs.length - 1]);
         for (int i = 0; i < n; i++) {
-            rand = random.nextDouble();
-            pos = arraySearch(cumProbs, rand);
+            pos = Arrays.binarySearch(cumProbs, random.nextDouble());
+            pos = (pos >= 0) ? pos : (-pos - 1);
             newArr[i] = array[pos];
             if (!repl) {
                 newElements = arrayConcat(enumArray(0, pos - 1), enumArray(pos + 1, array.length - 1));
@@ -1160,13 +1208,11 @@ class Auxils {
 
     static int randIntProb(int end, double[] probs) {
         int val;
-        double rand;
         double[] cumProbs = java.util.Arrays.copyOf(probs, end);
         Auxils.arrayCumSum(cumProbs);
         Auxils.arrayDiv(cumProbs, cumProbs[cumProbs.length - 1]);
-        rand = random.nextDouble();
-        val = arraySearch(cumProbs, rand);
-        return val;
+        val = java.util.Arrays.binarySearch(cumProbs, random.nextDouble());
+        return (val >= 0) ? val : (-val - 1);
     }
 
     static int countDistinct(double[] arr, int n) {
@@ -1187,27 +1233,6 @@ class Auxils {
             res++;
         }
         return res;
-    }
-
-    static int arraySearch(double[] array, double key) {
-        int lo = 0;
-        int hi = array.length - 1;
-        int mid;
-        if (key <= array[lo])
-            return lo;
-        else {
-            while (lo < hi) {
-                mid = lo + (hi - lo) / 2;
-                if (key <= array[mid])
-                    hi = mid - 1;
-                else if (key > array[mid])
-                    lo = mid + 1;
-            }
-            if (key <= array[lo])
-                return lo;
-            else
-                return ++lo;
-        }
     }
 
     static int[] enumArray(int from, int to) {
