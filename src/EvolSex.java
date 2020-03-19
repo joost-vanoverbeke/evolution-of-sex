@@ -64,7 +64,7 @@ public class EvolSex {
                                             sites.popSize(p), sites.traitFitness(p), sites.traitFitnessVar(p), sites.fitness(p), sites.fitnessVar(p), sites.load(p), sites.loadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
                                     for (int tr = 0; tr < comm.traits; tr++)
                                         streamOut.format(";%d;%f;%f;%f;%f;%f;%d;%d;%f;%f;%d;%d",
-                                                sites.comm.traitDim[tr] + 1, sites.patchDimEnv[p][sites.comm.traitDim[tr]], sites.genotype(p, tr), sites.genotypeVar(p, tr), sites.phenotype(p, tr), sites.phenotypeVar(p, tr), sites.distinctAllelesLocus(p, tr), sites.distinctAllelesTrait(p, tr),
+                                                sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotype(p, tr), sites.genotypeVar(p, tr), sites.phenotype(p, tr), sites.phenotypeVar(p, tr), sites.distinctAllelesLocus(p, tr), sites.distinctAllelesTrait(p, tr),
                                                 sites.genotypeVar(tr), sites.phenotypeVar(tr), sites.distinctAllelesLocus(tr), sites.distinctAllelesTrait(tr));
                                     streamOut.println("");
                                 }
@@ -89,7 +89,7 @@ public class EvolSex {
                                                     sites.popSize(p), sites.traitFitness(p), sites.traitFitnessVar(p), sites.fitness(p), sites.fitnessVar(p), sites.load(p), sites.loadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
                                             for (int tr = 0; tr < comm.traits; tr++)
                                                 streamOut.format(";%d;%f;%f;%f;%f;%f;%d;%d;%f;%f;%d;%d",
-                                                        sites.comm.traitDim[tr] + 1, sites.patchDimEnv[p][sites.comm.traitDim[tr]], sites.genotype(p, tr), sites.genotypeVar(p, tr), sites.phenotype(p, tr), sites.phenotypeVar(p, tr), sites.distinctAllelesLocus(p, tr), sites.distinctAllelesTrait(p, tr),
+                                                        sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotype(p, tr), sites.genotypeVar(p, tr), sites.phenotype(p, tr), sites.phenotypeVar(p, tr), sites.distinctAllelesLocus(p, tr), sites.distinctAllelesTrait(p, tr),
                                                         sites.genotypeVar(tr), sites.phenotypeVar(tr), sites.distinctAllelesLocus(tr), sites.distinctAllelesTrait(tr));
                                             streamOut.println("");
                                         }
@@ -120,9 +120,8 @@ class Sites {
     int drPos;
 
     int[] patch;
-    double[][] environment;
     boolean[] alive;
-    double[][] traitFenotype;
+    double[][] traitPhenotype;
     double[][] traitFitness;
     double[] fitness;
     double[][] genotype;
@@ -139,7 +138,7 @@ class Sites {
 
     double[][] adultsProb;
 
-    double[][] patchDimEnv;
+    double[][] environment;
 
     int nbrSettled;
     int[] posOffspring, posMothers;
@@ -159,9 +158,8 @@ class Sites {
         totSites = comm.nbrPatches * comm.microsites;
 
         patch = new int[totSites];
-        environment = new double[totSites][comm.envDims];
         alive = new boolean[totSites];
-        traitFenotype = new double[totSites][comm.traits];
+        traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
         genotype = new double[totSites][2 * evol.allLoci];
@@ -177,19 +175,16 @@ class Sites {
         maxFitness = new double[comm.nbrPatches];
 
         adultsProb = new double[comm.nbrPatches][totSites];
-        patchDimEnv = new double[comm.nbrPatches][comm.envDims];
+        environment = new double[comm.nbrPatches][comm.envDims];
 
         double indGtp;
-        java.util.Arrays.fill(alive, false);
-        java.util.Arrays.fill(maxFitness, 0);
+        Arrays.fill(alive, false);
+        Arrays.fill(maxFitness, 0);
 
         for (int p = 0; p < comm.nbrPatches; p++) {
-            if (comm.envDims >= 0) System.arraycopy(init.environment[p], 0, patchDimEnv[p], 0, comm.envDims);
-            for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
+            if (comm.envDims >= 0) System.arraycopy(init.environment[p], 0, environment[p], 0, comm.envDims);
+            for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++)
                 patch[m] = p;
-                for (int d = 0; d < comm.envDims; d++)
-                    environment[m][d] = patchDimEnv[p][d] + (Auxils.gaussianSampler.sample() * comm.sigmaE);
-            }
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
                 alive[m] = true;
@@ -202,11 +197,9 @@ class Sites {
                     }
                     for (int l : evol.sexGenes) {
                         genotype[m][l] = (int) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
-// sex - asex switch
-//                		genotype[m][l] =  init.pSex < 0.5 ? 0 : 1;
                     }
-                    traitFenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
-                    traitFitness[m][tr] = Math.exp(-(Math.pow(traitFenotype[m][tr] - environment[m][comm.traitDim[tr]], 2)) / evol.divF);
+                    traitPhenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
+                    traitFitness[m][tr] = Math.exp(-(Math.pow(traitPhenotype[m][tr] - environment[p][comm.traitDim[tr]], 2)) / evol.divF);
                     fitness[m] *= traitFitness[m][tr];
                 }
                 if (maxFitness[p] < fitness[m])
@@ -224,74 +217,39 @@ class Sites {
                     alive[i] = false;
     }
 
-
-    void changeEnvironment()
-    {
+    void changeEnvironment() {
+        boolean syncEnv = comm.envSync.equals("YES");
+        boolean globalEnv = comm.envType.equals("GLOBAL");
+        boolean syncChange = syncEnv && (Auxils.random.nextDouble() <= comm.pChange);
+        boolean globalChange;
+        double globalStep = 0;
         double step;
-        if (comm.envSync.equals("YES")) {
-            if (Auxils.random.nextDouble() <= comm.pChange) {
-                for (int d = 0; d < comm.envDims; d++) {
-                    if (comm.envType.equals("GLOBAL")) {
-                        step = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
-                        for (int p = 0; p < comm.nbrPatches; p++) {
-                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
-                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
-                                    comm.minEnv,
-                                    comm.maxEnv);
-                        }
-                    } else {
-                        for (int p = 0; p < comm.nbrPatches; p++) {
-                            step = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
-                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
-                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
-                                    comm.minEnv,
-                                    comm.maxEnv);
-                        }
-                    }
+
+        for (int d = 0; d < comm.envDims; d++) {
+            globalChange = globalEnv && (syncEnv ? syncChange : Auxils.random.nextDouble() <= comm.pChange);
+            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+            for (int p = 0; p < comm.nbrPatches; p++)
+                if (syncEnv ? syncChange : (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange))) {
+                    step = !globalEnv ? (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1)) : globalStep;
+                    environment[p][d] = environment[p][d] + step;
+                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+                    adjustFitnessEnv(p, d);
                 }
-            }
-        }
-        else
-        {
-            for (int d = 0; d < comm.envDims; d++)
-            {
-                if (comm.envType.equals("GLOBAL"))
-                {
-                    if (Auxils.random.nextDouble() <= comm.pChange)
-                    {
-                        step = comm.envStep[esPos]*(Auxils.random.nextBoolean() ? -1 : 1);
-                        for (int p = 0; p < comm.nbrPatches; p++)
-                        {
-                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
-                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
-                                    comm.minEnv,
-                                    comm.maxEnv);
-                        }
-                    }
-                }
-                else
-                {
-                    for (int p = 0; p < comm.nbrPatches; p++)
-                    {
-                        if (Auxils.random.nextDouble() <= comm.pChange)
-                        {
-                            step = comm.envStep[esPos]*(Auxils.random.nextBoolean() ? -1 : 1);
-                            patchDimEnv[p][d] = patchDimEnv[p][d] + step;
-                            patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
-                                    comm.minEnv,
-                                    comm.maxEnv);
-                        }
-                    }
-                }
-            }
         }
     }
 
-    void changePatchDimEnv(int p, int d, double step) {
-        patchDimEnv[p][d] = patchDimEnv[p][d] + step;
-        patchDimEnv[p][d] = Auxils.adjustToRange(patchDimEnv[p][d],
-                comm.minEnv,
-                comm.maxEnv);
+    void adjustFitnessEnv(int p, int d) {
+        for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
+            if (alive[m]) {
+                fitness[m] = 1;
+                for (int tr = 0; tr < comm.traits; tr++) {
+                    if (comm.traitDim[tr] == d) {
+                        traitFitness[m][tr] = Math.exp(-(Math.pow(traitPhenotype[m][tr] - environment[p][d], 2)) / evol.divF);
+                    }
+                    fitness[m] *= traitFitness[m][tr];
+                }
+            }
+        }
     }
 
     /* mortality
@@ -393,26 +351,14 @@ class Sites {
 
                 posFather = posFathers[Auxils.randIntProb(nbrFathers, FathersProb)];
                 inherit(posOffspring[i], posMothers[i], posFather);
-                // no selfing allowed
-                //        			for (int f = startPosSample; f < (startPosSample + rangeSample); f++)
-                //        				if (sexAdults[f] && ID[posAdults[f]] == ID[posMothers[i]] && posAdults[f] != posMothers[i]) {
-                //        					posFathers[nbrFathers] = posAdults[f];
-                //        					FathersProb[nbrFathers++] = adultsProb[f];
-                //        				}
-                //        			if (nbrFathers > 0) {
-                //        				posFather = posFathers[Auxils.randIntProb(nbrFathers, FathersProb)];
-                //        				inherit(posOffspring[i], posMothers[i], posFather);
-                //        			}
-                //        			else
-                //        				inherit(posOffspring[i], posMothers[i]);
             } else
                 inherit(posOffspring[i], posMothers[i]);
 
             mutate(posOffspring[i]);
 
             for (int tr = 0; tr < comm.traits; tr++) {
-                traitFenotype[posOffspring[i]][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
-                traitFitness[posOffspring[i]][tr] = Math.exp(-(Math.pow(traitFenotype[posOffspring[i]][tr] - environment[posOffspring[i]][comm.traitDim[tr]], 2)) / evol.divF);
+                traitPhenotype[posOffspring[i]][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
+                traitFitness[posOffspring[i]][tr] = Math.exp(-(Math.pow(traitPhenotype[posOffspring[i]][tr] - environment[p][comm.traitDim[tr]], 2)) / evol.divF);
                 fitness[posOffspring[i]] *= traitFitness[posOffspring[i]][tr];
             }
             if (maxFitness[p] < fitness[posOffspring[i]])
@@ -578,7 +524,7 @@ class Sites {
         double mean = 0;
         for (int i = 0; i < totSites; i++)
             if (alive[i])
-                mean += traitFenotype[i][t];
+                mean += traitPhenotype[i][t];
         mean /= metaPopSize();
         return mean;
     }
@@ -587,7 +533,7 @@ class Sites {
         double mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
-                mean += traitFenotype[i][t];
+                mean += traitPhenotype[i][t];
         mean /= popSize(p);
         return mean;
     }
@@ -597,7 +543,7 @@ class Sites {
         double var = 0;
         for (int i = 0; i < totSites; i++)
             if (alive[i])
-                var += Math.pow(mean - traitFenotype[i][t], 2);
+                var += Math.pow(mean - traitPhenotype[i][t], 2);
         var /= metaPopSize();
         return var;
     }
@@ -607,7 +553,7 @@ class Sites {
         double var = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
-                var += Math.pow(mean - traitFenotype[i][t], 2);
+                var += Math.pow(mean - traitPhenotype[i][t], 2);
         var /= popSize(p);
         return var;
     }
@@ -750,7 +696,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i]) {
                 fitRel = (fitness[i] / maxFitness[p]) / fitMean;
-                mean += traitFenotype[i][t] * fitRel;
+                mean += traitPhenotype[i][t] * fitRel;
                 sum += fitRel;
             }
         mean /= sum;
