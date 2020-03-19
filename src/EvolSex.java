@@ -136,6 +136,10 @@ class Sites {
     int[] nbrEmpty;
     double[] maxFitness;
 
+    int[] endPosFathers;
+    int[][] fathersPos;
+    double[][] fathersProb;
+
     double[][] adultsProb;
 
     double[][] environment;
@@ -174,7 +178,12 @@ class Sites {
         nbrEmpty = new int[comm.nbrPatches];
         maxFitness = new double[comm.nbrPatches];
 
+        endPosFathers = new int[comm.nbrPatches];
+        fathersPos = new int[comm.nbrPatches][comm.microsites];
+        fathersProb = new double[comm.nbrPatches][comm.microsites];
+
         adultsProb = new double[comm.nbrPatches][totSites];
+
         environment = new double[comm.nbrPatches][comm.envDims];
 
         double indGtp;
@@ -233,12 +242,12 @@ class Sites {
                     step = !globalEnv ? (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1)) : globalStep;
                     environment[p][d] = environment[p][d] + step;
                     environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
-                    adjustFitnessEnv(p, d);
+                    adjustFitness(p, d);
                 }
         }
     }
 
-    void adjustFitnessEnv(int p, int d) {
+    void adjustFitness(int p, int d) {
         for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
             if (alive[m]) {
                 fitness[m] = 1;
@@ -259,8 +268,8 @@ class Sites {
         double maxFitnessTemp;
         endPosAdults = 0;
 
-        java.util.Arrays.fill(nbrAdults, 0);
-        java.util.Arrays.fill(nbrEmpty, 0);
+        Arrays.fill(nbrAdults, 0);
+        Arrays.fill(nbrEmpty, 0);
 
         for (int p = 0; p < comm.nbrPatches; p++) {
             maxFitnessTemp = 0;
@@ -290,8 +299,11 @@ class Sites {
     }
 
     void contributionAdults() {
+        int next;
         double contr;
+
         for (int p = 0; p < comm.nbrPatches; p++) {
+            next = 0;
             for (int i = (p == 0) ? 0 : cumsumAdults[p - 1]; i < cumsumAdults[p]; i++) {
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[posAdults[i]];
                 if (maxFitness[p] > 0.)
@@ -300,12 +312,16 @@ class Sites {
 //    				contr = 0.;
                     contr = 1.;
 
-                if (sexAdults[i])
+                if (sexAdults[i]) {
+                    fathersPos[p][next] = posAdults[i];
+                    fathersProb[p][next++] = contr;
                     contr *= comm.demogrCost[dcPos];
+                }
                 for (int p2 = 0; p2 < comm.nbrPatches; p2++) {
                     adultsProb[p2][i] = contr * comm.dispNeighbours[p2][p];
                 }
             }
+            endPosFathers[p] = next;
         }
     }
 
@@ -314,9 +330,9 @@ class Sites {
         for (int p = 0; p < comm.nbrPatches; p++) {
             nbrSettled = nbrEmpty[p];
             if (nbrSettled > 0) {
-                posOffspring = Auxils.arraySample(nbrSettled, java.util.Arrays.copyOf(posEmpty[p], nbrEmpty[p]));
+                posOffspring = Auxils.arraySample(nbrSettled, Arrays.copyOf(posEmpty[p], nbrEmpty[p]));
                 //sampling mothers with replacement!
-                sampleM = Auxils.arraySampleProb(nbrSettled, Auxils.enumArray(0, endPosAdults - 1), java.util.Arrays.copyOf(adultsProb[p], endPosAdults), true);
+                sampleM = Auxils.arraySampleProb(nbrSettled, Auxils.enumArray(0, endPosAdults - 1), Arrays.copyOf(adultsProb[p], endPosAdults), true);
                 posMothers = Auxils.arrayElements(posAdults, sampleM);
                 sexMothers = Auxils.arrayElements(sexAdults, sampleM);
                 settle(p);
@@ -327,29 +343,14 @@ class Sites {
     /* installs newborns in empty microsites and inherits traits from the parent(s)
      * including mutation */
     void settle(int p) {
-        int startPosSample, rangeSample;
-        int posFather, nbrFathers, patchMother;
-        int[] posFathers;
-        double[] FathersProb;
+        int patchMother, posFather;
 
         for (int i = 0; i < nbrSettled; i++) {
             alive[posOffspring[i]] = true;
             fitness[posOffspring[i]] = 1;
             if (sexMothers[i]) {
                 patchMother = patch[posMothers[i]];
-                startPosSample = (patchMother == 0) ? 0 : cumsumAdults[patchMother - 1];
-                rangeSample = cumsumAdults[patchMother] - startPosSample;
-                posFathers = new int[rangeSample];
-                FathersProb = new double[rangeSample];
-                nbrFathers = 0;
-                // selfing allowed
-                for (int f = startPosSample; f < (startPosSample + rangeSample); f++)
-                    if (sexAdults[f]) {
-                        posFathers[nbrFathers] = posAdults[f];
-                        FathersProb[nbrFathers++] = adultsProb[p][f];
-                    }
-
-                posFather = posFathers[Auxils.randIntProb(nbrFathers, FathersProb)];
+                posFather = fathersPos[patchMother][Auxils.randIntProb(endPosFathers[patchMother], fathersProb[patchMother])];
                 inherit(posOffspring[i], posMothers[i], posFather);
             } else
                 inherit(posOffspring[i], posMothers[i]);
@@ -423,7 +424,7 @@ class Sites {
     }
 
     int popSize(int p) {
-        return Auxils.arraySum(java.util.Arrays.copyOfRange(alive, p * comm.microsites, p * comm.microsites + comm.microsites));
+        return Auxils.arraySum(Arrays.copyOfRange(alive, p * comm.microsites, p * comm.microsites + comm.microsites));
     }
 
     int distinctAllelesLocus(int t) {
@@ -919,7 +920,7 @@ class Init {
         N = new int[comm.nbrPatches];
         genotype = new double[comm.nbrPatches][comm.traits];
 
-        java.util.Arrays.fill(N, comm.microsites);
+        Arrays.fill(N, comm.microsites);
 
         if (comm.envType.equals("GLOBAL")) {
             for (int d = 0; d < comm.envDims; d++) {
@@ -1097,13 +1098,13 @@ class Auxils {
     static int[] arraySample(int n, int[] array) {
         int[] tempArr = array.clone();
         arrayShuffle(tempArr);
-        return java.util.Arrays.copyOf(tempArr, n);
+        return Arrays.copyOf(tempArr, n);
     }
 
     static double[] arraySample(int n, double[] array) {
         double[] tempArr = array.clone();
         arrayShuffle(tempArr);
-        return java.util.Arrays.copyOf(tempArr, n);
+        return Arrays.copyOf(tempArr, n);
     }
 
     //sampling with or without replacement
@@ -1154,17 +1155,17 @@ class Auxils {
 
     static int randIntProb(int end, double[] probs) {
         int val;
-        double[] cumProbs = java.util.Arrays.copyOf(probs, end);
+        double[] cumProbs = Arrays.copyOf(probs, end);
         Auxils.arrayCumSum(cumProbs);
         Auxils.arrayDiv(cumProbs, cumProbs[cumProbs.length - 1]);
-        val = java.util.Arrays.binarySearch(cumProbs, random.nextDouble());
+        val = Arrays.binarySearch(cumProbs, random.nextDouble());
         return (val >= 0) ? val : (-val - 1);
     }
 
     static int countDistinct(double[] arr, int n) {
         // First sort the array so that all 
         // occurrences become consecutive 
-        java.util.Arrays.sort(arr);
+        Arrays.sort(arr);
 
         // Traverse the sorted array 
         int res = 0;
@@ -1372,13 +1373,13 @@ class Auxils {
     }
 
     static int[] arrayConcat(int[] first, int[] second) {
-        int[] result = java.util.Arrays.copyOf(first, first.length + second.length);
+        int[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;
     }
 
     static double[] arrayConcat(double[] first, double[] second) {
-        double[] result = java.util.Arrays.copyOf(first, first.length + second.length);
+        double[] result = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;
     }
