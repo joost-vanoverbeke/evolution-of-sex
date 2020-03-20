@@ -2,6 +2,7 @@
 
 import org.apache.commons.rng.UniformRandomProvider;
 import org.apache.commons.rng.sampling.CombinationSampler;
+import org.apache.commons.rng.sampling.PermutationSampler;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler.Binomial;
 import org.apache.commons.rng.sampling.distribution.NormalizedGaussianSampler;
 import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
@@ -325,9 +326,11 @@ class Sites {
                 }
             }
             endPosFathers[p] = next;
-            fathersCumSum[p] = Arrays.copyOf(fathersProb[p], next);
-            Auxils.arrayCumSum(fathersCumSum[p]);
-            Auxils.arrayDiv(fathersCumSum[p], fathersCumSum[p][next-1]);
+            if (next > 0) {
+                fathersCumSum[p] = Arrays.copyOf(fathersProb[p], next);
+                Auxils.arrayCumSum(fathersCumSum[p]);
+                Auxils.arrayDiv(fathersCumSum[p], fathersCumSum[p][next - 1]);
+            }
         }
     }
 
@@ -382,17 +385,22 @@ class Sites {
 
     /* inheritance for sexual reproduction (two parent) */
     void inherit(int posOffspring, int posMother, int posFather) {
+        int k;
+        int[] samplePos;
 
-        for (int l = 0; l < evol.allLoci; l++) {
-            if (Auxils.random.nextBoolean())
-                genotype[posOffspring][evol.allMother[l]] = genotype[posMother][evol.allMother[l]];
-            else
-                genotype[posOffspring][evol.allMother[l]] = genotype[posMother][evol.allFather[l]];
-            if (Auxils.random.nextBoolean())
-                genotype[posOffspring][evol.allFather[l]] = genotype[posFather][evol.allMother[l]];
-            else
-                genotype[posOffspring][evol.allFather[l]] = genotype[posFather][evol.allFather[l]];
-        }
+        k = Auxils.binomialSamplerMother.sample();
+        samplePos = Auxils.permutationSamplerMother.sample();
+            for (int l  = 0; l < k; l++)
+                genotype[posOffspring][evol.allMother[samplePos[l]]] = genotype[posMother][evol.allMother[samplePos[l]]];
+            for (int l  = k; l < evol.allLoci; l++)
+                genotype[posOffspring][evol.allMother[samplePos[l]]] = genotype[posMother][evol.allFather[samplePos[l]]];
+
+        k = Auxils.binomialSamplerMother.sample();
+        samplePos = Auxils.permutationSamplerMother.sample();
+        for (int l  = 0; l < k; l++)
+            genotype[posOffspring][evol.allFather[samplePos[l]]] = genotype[posFather][evol.allMother[samplePos[l]]];
+        for (int l  = k; l < evol.allLoci; l++)
+            genotype[posOffspring][evol.allFather[samplePos[l]]] = genotype[posFather][evol.allFather[samplePos[l]]];
     }
 
     void mutate(int posOffspring) {
@@ -839,6 +847,8 @@ class Evol {
 
     int[] allMother;
     int[] allFather;
+    int[] allMotherShuffle;
+    int[] allFatherShuffle;
     int[] allGenes;
     int[] somMother;
     int[] somFather;
@@ -861,6 +871,8 @@ class Evol {
 
         allMother = new int[allLoci];
         allFather = new int[allLoci];
+        allMotherShuffle = allMother.clone();
+        allFatherShuffle = allFather.clone();
         allGenes = new int[2 * allLoci];
         somMother = new int[traitLoci];
         somFather = new int[traitLoci];
@@ -1074,10 +1086,14 @@ class Auxils {
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
     static SharedStateDiscreteSampler binomialSamplerSex;
+    static SharedStateDiscreteSampler binomialSamplerMother;
+    static PermutationSampler permutationSamplerMother;
 
     static void init(Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
         binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRate);
+        binomialSamplerMother = Binomial.of(random, evol.allLoci, 0.5);
+        permutationSamplerMother = new PermutationSampler(random, evol.allLoci, evol.allLoci);
     }
 
     static void arrayShuffle(int[] array) {
@@ -1219,6 +1235,19 @@ class Auxils {
         double[] newArr = new double[pos.length];
         for (int i = 0; i < newArr.length; i++)
             newArr[i] = array[pos[i]];
+        return newArr;
+    }
+
+    static int[] arrayAntiElements(int[] array, int[] pos) {
+        java.util.Arrays.sort(pos);
+        int j = 0;
+        int k = 0;
+        int[] newArr = new int[array.length - pos.length];
+        for (int i = 0; i < array.length; i++)
+            if(i == j)
+                j++;
+            else
+                newArr[k++] = array[i];
         return newArr;
     }
 
