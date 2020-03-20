@@ -120,35 +120,23 @@ class Sites {
     int drPos;
 
     int[] patch;
-//    boolean[] alive;
     double[][] traitPhenotype;
     double[][] traitFitness;
     double[] fitness;
     double[][] genotype;
     double[] pSex;
 
-    int[] posAdults;
-    boolean[] sexAdults;
-    int[] nbrAdults;
-    int[] cumsumAdults;
-//    int endPosAdults;
-    int[][] posEmpty;
-    int[] nbrEmpty;
+    double[][] environment;
     double[] maxFitness;
 
+    boolean[] sexAdults;
     int[] endPosFathers;
     int[][] fathersPos;
     double[][] fathersProb;
     double[][] fathersCumProb;
-
-
     double[][] mothersCumProb;
 
-    double[][] environment;
 
-//    int nbrSettled;
-//    int[] posOffspring, posMothers;
-//    boolean[] sexMothers;
 
 
     public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int pe, int dr) {
@@ -164,33 +152,23 @@ class Sites {
         totSites = comm.nbrPatches * comm.microsites;
 
         patch = new int[totSites];
-//        alive = new boolean[totSites];
         traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
         genotype = new double[totSites][2 * evol.allLoci];
         pSex = new double[totSites];
 
-
-        posAdults = new int[totSites];
-        sexAdults = new boolean[totSites];
-        nbrAdults = new int[comm.nbrPatches];
-        cumsumAdults = new int[comm.nbrPatches];
-        posEmpty = new int[comm.nbrPatches][comm.microsites];
-        nbrEmpty = new int[comm.nbrPatches];
+        environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
 
+        sexAdults = new boolean[totSites];
         endPosFathers = new int[comm.nbrPatches];
         fathersPos = new int[comm.nbrPatches][comm.microsites];
         fathersProb = new double[comm.nbrPatches][comm.microsites];
         fathersCumProb = new double[comm.nbrPatches][];
-
         mothersCumProb = new double[comm.nbrPatches][totSites];
 
-        environment = new double[comm.nbrPatches][comm.envDims];
-
         double indGtp;
-//        Arrays.fill(alive, false);
         Arrays.fill(maxFitness, 0);
 
         for (int p = 0; p < comm.nbrPatches; p++) {
@@ -244,12 +222,12 @@ class Sites {
 
     void adjustFitness(int p, int d) {
         for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
-            fitness[m] = 1;
             for (int tr = 0; tr < comm.traits; tr++) {
                 if (comm.traitDim[tr] == d) {
+                    fitness[m] /= traitFitness[m][tr];
                     traitFitness[m][tr] = Math.exp(-(Math.pow(traitPhenotype[m][tr] - environment[p][d], 2)) / evol.divF);
+                    fitness[m] *= traitFitness[m][tr];
                 }
-                fitness[m] *= traitFitness[m][tr];
             }
         }
     }
@@ -1015,7 +993,11 @@ class Reader {
 
 /* Auxiliary functions for array calculations */
 class Auxils {
-    static UniformRandomProvider random = RandomSource.create(RandomSource.MT_64);
+//    static UniformRandomProvider random = RandomSource.create(RandomSource.MT_64);
+//    static UniformRandomProvider random = RandomSource.create(RandomSource.JSF_64);
+//    static UniformRandomProvider random = RandomSource.create(RandomSource.MSWS);
+    static UniformRandomProvider random = RandomSource.create(RandomSource.XO_RO_SHI_RO_128_PP);
+
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
     static SharedStateDiscreteSampler binomialSamplerSex;
