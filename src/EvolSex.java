@@ -139,6 +139,8 @@ class Sites {
     int[] endPosFathers;
     int[][] fathersPos;
     double[][] fathersProb;
+    double[][] fathersCumSum;
+
 
     double[][] adultsProb;
 
@@ -181,6 +183,7 @@ class Sites {
         endPosFathers = new int[comm.nbrPatches];
         fathersPos = new int[comm.nbrPatches][comm.microsites];
         fathersProb = new double[comm.nbrPatches][comm.microsites];
+        fathersCumSum = new double[comm.nbrPatches][];
 
         adultsProb = new double[comm.nbrPatches][totSites];
 
@@ -322,6 +325,9 @@ class Sites {
                 }
             }
             endPosFathers[p] = next;
+            fathersCumSum[p] = Arrays.copyOf(fathersProb[p], next);
+            Auxils.arrayCumSum(fathersCumSum[p]);
+            Auxils.arrayDiv(fathersCumSum[p], fathersCumSum[p][next-1]);
         }
     }
 
@@ -350,7 +356,7 @@ class Sites {
             fitness[posOffspring[i]] = 1;
             if (sexMothers[i]) {
                 patchMother = patch[posMothers[i]];
-                posFather = fathersPos[patchMother][Auxils.randIntProb(endPosFathers[patchMother], fathersProb[patchMother])];
+                posFather = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumSum[patchMother])];
                 inherit(posOffspring[i], posMothers[i], posFather);
             } else
                 inherit(posOffspring[i], posMothers[i]);
@@ -1158,6 +1164,12 @@ class Auxils {
         double[] cumProbs = Arrays.copyOf(probs, end);
         Auxils.arrayCumSum(cumProbs);
         Auxils.arrayDiv(cumProbs, cumProbs[cumProbs.length - 1]);
+        val = Arrays.binarySearch(cumProbs, random.nextDouble());
+        return (val >= 0) ? val : (-val - 1);
+    }
+
+    static int randIntCumProb(double[] cumProbs) {
+        int val;
         val = Arrays.binarySearch(cumProbs, random.nextDouble());
         return (val >= 0) ? val : (-val - 1);
     }
