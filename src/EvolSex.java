@@ -30,7 +30,7 @@ public class EvolSex {
 
             long startTime = System.currentTimeMillis();
 
-            streamOut.print("gridsize;patches;p_ext;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
+            streamOut.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
                     + "run;time;patch;N;trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;load_mean;load_var;S_mean;S_var;pSex_mean;pSex_var");
 
             for (int tr = 0; tr < comm.traits; tr++)
@@ -42,23 +42,22 @@ public class EvolSex {
             for (int r = 0; r < run.runs; r++)
                 for (int dc = 0; dc < comm.demogrCost.length; dc++)
                     for (int es = 0; es < comm.envStep.length; es++)
-                        for (int pe = 0; pe < comm.pExt.length; pe++)
                             for (int dr = 0; dr < comm.dispRate.length; dr++) {
 
-                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; step = %.4f; pExt = %.4f; disp = %.4f%n",
-                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.envStep[es], comm.pExt[pe], comm.dispRate[dr]);
+                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; step = %.4f; disp = %.4f%n",
+                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.envStep[es], comm.dispRate[dr]);
 
                                 comm.init();
                                 evol.init(comm);
                                 Auxils.init(comm, evol);
                                 Init init = new Init(comm);
 
-                                Sites sites = new Sites(comm, evol, init, dc, es, pe, dr);
+                                Sites sites = new Sites(comm, evol, init, dc, es, dr);
 
                                 System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f%n", 0, sites.metaPopSize(), sites.absFitness(), sites.fitness(), sites.pSex());
                                 for (int p = 0; p < comm.nbrPatches; p++) {
-                                    streamOut.format("%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
-                                            comm.gridSize, comm.nbrPatches, comm.pExt[pe], comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
+                                    streamOut.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
+                                            comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
                                     streamOut.format(";%d;%d;%d",
                                             r + 1, 0, p + 1);
                                     streamOut.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
@@ -81,8 +80,8 @@ public class EvolSex {
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                                         for (int p = 0; p < comm.nbrPatches; p++) {
-                                            streamOut.format("%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
-                                                    comm.gridSize, comm.nbrPatches, comm.pExt[pe], comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
+                                            streamOut.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
+                                                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
                                             streamOut.format(";%d;%d;%d",
                                                     r + 1, t + 1, p + 1);
                                             streamOut.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
@@ -116,7 +115,6 @@ class Sites {
 
     int dcPos;
     int esPos;
-    int pePos;
     int drPos;
 
     int[] patch;
@@ -139,12 +137,11 @@ class Sites {
 
 
 
-    public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int pe, int dr) {
+    public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int dr) {
         comm = cmm;
         evol = evl;
         dcPos = dc;
         esPos = es;
-        pePos = pe;
         drPos = dr;
 
         comm.calcDispNeighbours(drPos);
@@ -696,7 +693,6 @@ class Comm {
     int nbrPatches = gridSize * gridSize;
     double pChange = 0.1;
     double[] envStep = {0.01};
-    double[] pExt = {0};
     double[] dispRate = {0.01};
     double rho = 1;
     double pSex = 0;
@@ -932,12 +928,6 @@ class Reader {
                         comm.envStep = new double[size];
                         for (int i = 0; i < size; i++)
                             comm.envStep[i] = Double.parseDouble(words[2 + i]);
-                        break;
-                    case "PEXT":
-                        size = Integer.parseInt(words[1]);
-                        comm.pExt = new double[size];
-                        for (int i = 0; i < size; i++)
-                            comm.pExt[i] = Double.parseDouble(words[2 + i]);
                         break;
                     case "M":
                         size = Integer.parseInt(words[1]);
