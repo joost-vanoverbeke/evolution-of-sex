@@ -19,7 +19,6 @@ ENVTYPE				LOCAL
 ENVSYNC				NO
 PCHANGE		        0.1											probability of environmental change along each niche dimension (default = 0.1)
 ENVSTEP		    1   0.05										    step size of environmental change (default = 0.01)
-PEXT            1   0.0	                                     	extinction rate of patch communities  (default = 0)
 M               1   0.0		                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
 RHO                 1                                        	scaling factor determining the width of the dispersal kernel  (default = 1)
 
