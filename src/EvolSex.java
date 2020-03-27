@@ -49,7 +49,7 @@ public class EvolSex {
                                 comm.init();
                                 evol.init(comm);
                                 Auxils.init(comm, evol);
-                                Init init = new Init(comm);
+                                Init init = new Init(comm, es);
 
                                 Sites sites = new Sites(comm, evol, init, dc, es, dr);
 
@@ -69,7 +69,11 @@ public class EvolSex {
                                 }
 
                                 for (int t = 0; t < run.timeSteps; t++) {
-                                    sites.changeEnvironment();
+                                    if(comm.envWave.equals("YES")) {
+                                        if (((t + 1) % (1/comm.pChange)) == 0)
+                                            sites.changeEnvironmentWave(t);
+                                    } else
+                                        sites.changeEnvironment();
                                     sites.findMaxFitness();
                                     sites.contributionAdults();
                                     sites.reproduction();
@@ -213,6 +217,18 @@ class Sites {
                     environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
                     adjustFitness(p, d);
                 }
+        }
+    }
+
+    void changeEnvironmentWave(int t) {
+        double step = comm.envStep[esPos]*comm.pChange;
+        double period = 2.*Math.PI/step;
+        double A = (comm.maxEnv - comm.minEnv)/2.;
+        for (int d = 0; d < comm.envDims; d++) {
+            for (int p = 0; p < comm.nbrPatches; p++) {
+                environment[p][d] = A*Math.sin(step*(t + comm.envShift[p][d]*period));
+                adjustFitness(p, d);
+            }
         }
     }
 
@@ -663,6 +679,7 @@ class Sites {
 class Comm {
     String envType = "GLOBAL";
     String envSync = "NO";
+    String envWave = "NO";
     int envDims = 1;
     int traits = 2;
     double minEnv = 0.2;
@@ -683,6 +700,8 @@ class Comm {
 
     int[] traitDim;
 
+    double[][] envShift = new double[nbrPatches][envDims];
+
     double[][] neighbours = new double[nbrPatches][nbrPatches];
     double[][] dispNeighbours = new double[nbrPatches][nbrPatches];
 
@@ -700,6 +719,8 @@ class Comm {
             if (dim == envDims)
                 dim = 0;
         }
+
+        envShift = new double[nbrPatches][envDims];
     }
 
     void calcDistNeighbours() {
@@ -822,8 +843,7 @@ class Init {
     int[] N;
     double[][] genotype;
 
-    public Init(Comm comm) {
-        double dEnv;
+    public Init(Comm comm, int es) {
         environment = new double[comm.nbrPatches][comm.envDims];
         N = new int[comm.nbrPatches];
         genotype = new double[comm.nbrPatches][comm.traits];
@@ -832,14 +852,35 @@ class Init {
 
         if (comm.envType.equals("GLOBAL")) {
             for (int d = 0; d < comm.envDims; d++) {
-                dEnv = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
-                for (int p = 0; p < comm.nbrPatches; p++)
-                    environment[p][d] = dEnv;
+                if (comm.envWave.equals("YES")) {
+                    double step = comm.envStep[es]*comm.pChange;
+                    double period = 2.*Math.PI/step;
+                    double A = (comm.maxEnv - comm.minEnv)/2.;
+                    double shift = Auxils.random.nextDouble();
+                    for (int p = 0; p < comm.nbrPatches; p++) {
+                        comm.envShift[p][d] = shift;
+                        environment[p][d] = A*Math.sin(step*comm.envShift[p][d]*period);
+                    }
+                } else {
+                    double dEnv = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
+                    for (int p = 0; p < comm.nbrPatches; p++) {
+                        environment[p][d] = dEnv;
+                    }
+                }
             }
         } else {
             for (int p = 0; p < comm.nbrPatches; p++)
-                for (int d = 0; d < comm.envDims; d++)
-                    environment[p][d] = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
+                for (int d = 0; d < comm.envDims; d++) {
+                    if (comm.envWave.equals("YES")) {
+                        double step = comm.envStep[es]*comm.pChange;
+                        double period = 2.*Math.PI/step;
+                        double A = (comm.maxEnv - comm.minEnv)/2.;
+                        comm.envShift[p][d] = Auxils.random.nextDouble();
+                        environment[p][d] = A*Math.sin(step*comm.envShift[p][d]*period);
+                    } else {
+                        environment[p][d] = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
+                    }
+                }
         }
 
         for (int p = 0; p < comm.nbrPatches; p++) {
@@ -900,6 +941,9 @@ class Reader {
                         break;
                     case "ENVSYNC":
                         comm.envSync = words[1];
+                        break;
+                    case "ENVWAVE":
+                        comm.envWave = words[1];
                         break;
                     case "PCHANGE":
                         comm.pChange = Double.parseDouble(words[1]);
