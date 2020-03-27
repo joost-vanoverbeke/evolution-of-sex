@@ -137,7 +137,6 @@ class Sites {
 
     double[][] adultsProb;
     boolean[] sexMothers;
-    int[] endPosFathers;
     int[][] fathersPos;
     double[][] fathersProb;
     double[][] fathersCumProb;
@@ -172,7 +171,6 @@ class Sites {
         nbrEmpty = new int[comm.nbrPatches];
         maxFitness = new double[comm.nbrPatches];
 
-        endPosFathers = new int[comm.nbrPatches];
         fathersPos = new int[comm.nbrPatches][comm.microsites];
         fathersProb = new double[comm.nbrPatches][comm.microsites];
         fathersCumProb = new double[comm.nbrPatches][];
@@ -297,7 +295,6 @@ class Sites {
                 contr = maxFitnessNotZero ? fitness[posAdults[i]] / maxFitness[p] : 1.;
                 // contr = maxFitnessNotZero ? fitness[posAdults[i]] / maxFitness[p] : 0.;
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[posAdults[i]];
-
                 if (sexAdults[i]) {
                     fathersPos[p][next] = posAdults[i];
                     fathersProb[p][next++] = contr;
@@ -307,7 +304,6 @@ class Sites {
                     adultsProb[p2][i] = contr * comm.dispNeighbours[p2][p];
                 }
             }
-            endPosFathers[p] = next;
             if (next > 0) {
                 fathersCumProb[p] = Arrays.copyOf(fathersProb[p], next);
                 Auxils.arrayCumSum(fathersCumProb[p]);
