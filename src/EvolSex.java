@@ -14,7 +14,7 @@ import java.util.Arrays;
 
 
 /* class EvolvingMetacommunity
- * loops over cycles (time steps) of patch extinction, mortality, reproduction and dispersal
+ * loops over cycles (time steps) of reproduction and dispersal
  * writes output to file */
 public class EvolSex {
 
@@ -107,7 +107,7 @@ public class EvolSex {
 
 /* class Sites
  * keeps track of individuals and their attributes in microsites (microhabitats within patches)
- * implements patch extinction, mortality, reproduction (with inheritance and mutation) and dispersal */
+ * implements reproduction (with inheritance and mutation) and dispersal */
 class Sites {
     Comm comm;
     Evol evol;
