@@ -61,7 +61,7 @@ public class EvolSex {
                                     streamOut.format(";%d;%d;%d",
                                             r + 1, 0, p + 1);
                                     streamOut.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
-                                            sites.popSize(), sites.traitFitness(p), sites.traitFitnessVar(p), sites.fitness(p), sites.fitnessVar(p), sites.load(p), sites.loadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
+                                            sites.popSize(p), sites.traitFitness(p), sites.traitFitnessVar(p), sites.fitness(p), sites.fitnessVar(p), sites.load(p), sites.loadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
                                     for (int tr = 0; tr < comm.traits; tr++)
                                         streamOut.format(";%d;%f;%f;%f;%f;%f;%d;%d;%f;%f;%d;%d",
                                                 sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotype(p, tr), sites.genotypeVar(p, tr), sites.phenotype(p, tr), sites.phenotypeVar(p, tr), sites.distinctAllelesLocus(p, tr), sites.distinctAllelesTrait(p, tr),
@@ -85,7 +85,7 @@ public class EvolSex {
                                             streamOut.format(";%d;%d;%d",
                                                     r + 1, t + 1, p + 1);
                                             streamOut.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
-                                                    sites.popSize(), sites.traitFitness(p), sites.traitFitnessVar(p), sites.fitness(p), sites.fitnessVar(p), sites.load(p), sites.loadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
+                                                    sites.popSize(p), sites.traitFitness(p), sites.traitFitnessVar(p), sites.fitness(p), sites.fitnessVar(p), sites.load(p), sites.loadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
                                             for (int tr = 0; tr < comm.traits; tr++)
                                                 streamOut.format(";%d;%f;%f;%f;%f;%f;%d;%d;%f;%f;%d;%d",
                                                         sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotype(p, tr), sites.genotypeVar(p, tr), sites.phenotype(p, tr), sites.phenotypeVar(p, tr), sites.distinctAllelesLocus(p, tr), sites.distinctAllelesTrait(p, tr),
@@ -417,8 +417,8 @@ class Sites {
         return Auxils.arraySum(alive);
     }
 
-    int popSize() {
-        return comm.microsites;
+    int popSize(int p) {
+        return Auxils.arraySum(Arrays.copyOfRange(alive, p * comm.microsites, p * comm.microsites + comm.microsites));
     }
 
     int distinctAllelesLocus(int t) {
@@ -491,7 +491,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 mean += Auxils.arrayMean(Auxils.arrayElements(genotype[i], evol.traitGenes[t]));
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -511,7 +511,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 var += Math.pow(mean - Auxils.arrayMean(Auxils.arrayElements(genotype[i], evol.traitGenes[t])), 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 
@@ -529,7 +529,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 mean += traitPhenotype[i][t];
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -549,7 +549,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 var += Math.pow(mean - traitPhenotype[i][t], 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 
@@ -567,7 +567,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 mean += traitFitness[i][t] / max;
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -584,7 +584,7 @@ class Sites {
         double var = 0;
         for (int t = 0; t < comm.traits; t++)
             var += Math.pow(mean - traitFitness(p, t), 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 
@@ -602,7 +602,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 mean += fitness[i];
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -622,7 +622,7 @@ class Sites {
             if (alive[i])
                 mean += fitness[i] / maxFitness[p];
 //        		mean += fitness[i];
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -633,7 +633,7 @@ class Sites {
             if (alive[i])
                 var += Math.pow(mean - fitness[i] / maxFitness[p], 2);
 //        		var += Math.pow(mean - fitness[i], 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 
@@ -665,7 +665,7 @@ class Sites {
             if (alive[i])
                 mean += 1 - fitness[i] / maxFitness[p];
 //        		mean += 1 - fitness[i];
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -676,7 +676,7 @@ class Sites {
             if (alive[i])
                 var += Math.pow(mean - (1 - fitness[i] / maxFitness[p]), 2);
 //        		var += Math.pow(mean - (1 - fitness[i]), 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 
@@ -715,7 +715,7 @@ class Sites {
         double var = 0;
         for (int t = 0; t < comm.traits; t++)
             var += Math.pow(mean - selectionDiff(p, t), 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 
@@ -733,7 +733,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 mean += pSex[i];
-        mean /= popSize();
+        mean /= popSize(p);
         return mean;
     }
 
@@ -743,7 +743,7 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 var += Math.pow(mean - pSex[i], 2);
-        var /= popSize();
+        var /= popSize(p);
         return var;
     }
 }
