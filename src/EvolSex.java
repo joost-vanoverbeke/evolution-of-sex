@@ -2,7 +2,6 @@
 
 import org.apache.commons.rng.UniformRandomProvider;
 import org.apache.commons.rng.sampling.CombinationSampler;
-import org.apache.commons.rng.sampling.PermutationSampler;
 import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSampler.Binomial;
 import org.apache.commons.rng.sampling.distribution.NormalizedGaussianSampler;
 import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
@@ -317,22 +316,10 @@ class Sites {
 
     /* inheritance for sexual reproduction (two parent) */
     void inherit(int posOffspring, int posMother, int posFather) {
-        int k;
-        int[] samplePos;
-
-        k = Auxils.binomialSamplerRecombination.sample();
-        samplePos = Auxils.permutationSamplerRecombination.sample();
-            for (int l  = 0; l < k; l++)
-                genotype[posOffspring][evol.allMother[samplePos[l]]] = genotype[posMother][evol.allMother[samplePos[l]]];
-            for (int l  = k; l < evol.allLoci; l++)
-                genotype[posOffspring][evol.allMother[samplePos[l]]] = genotype[posMother][evol.allFather[samplePos[l]]];
-
-        k = Auxils.binomialSamplerRecombination.sample();
-        samplePos = Auxils.permutationSamplerRecombination.sample();
-        for (int l  = 0; l < k; l++)
-            genotype[posOffspring][evol.allFather[samplePos[l]]] = genotype[posFather][evol.allMother[samplePos[l]]];
-        for (int l  = k; l < evol.allLoci; l++)
-            genotype[posOffspring][evol.allFather[samplePos[l]]] = genotype[posFather][evol.allFather[samplePos[l]]];
+        for (int l = 0; l < evol.allLoci; l++) {
+            genotype[posOffspring][evol.allMother[l]] = genotype[posMother][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
+            genotype[posOffspring][evol.allFather[l]] = genotype[posFather][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
+        }
     }
 
     void mutate(int posOffspring) {
@@ -991,15 +978,11 @@ class Auxils {
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
     static SharedStateDiscreteSampler binomialSamplerSex;
-    static SharedStateDiscreteSampler binomialSamplerRecombination;
-    static PermutationSampler permutationSamplerRecombination;
     static CombinationSampler combinationSamplerPositionOffspring;
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
         binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRate);
-        binomialSamplerRecombination = Binomial.of(random, evol.allLoci, 0.5);
-        permutationSamplerRecombination = new PermutationSampler(random, evol.allLoci, evol.allLoci);
         combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewBorns);
     }
 
