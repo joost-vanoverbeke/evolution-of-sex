@@ -99,7 +99,6 @@ public class EvolSex {
             long endTime = System.currentTimeMillis();
             System.out.println("EvolMetac took " + (endTime - startTime) +
                     " milliseconds.");
-
         }
     }
 }
@@ -140,8 +139,6 @@ class Sites {
     int[][] fathersPos;
     double[][] fathersProb;
     double[][] fathersCumProb;
-
-
 
     public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int dr) {
         comm = cmm;
@@ -291,9 +288,8 @@ class Sites {
         for (int p = 0; p < comm.nbrPatches; p++) {
             next = 0;
             for (int i = (p == 0) ? 0 : cumsumAdults[p - 1]; i < cumsumAdults[p]; i++) {
-                boolean maxFitnessNotZero = maxFitness[p] > 0.;
-                contr = maxFitnessNotZero ? fitness[posAdults[i]] / maxFitness[p] : 1.;
-                // contr = maxFitnessNotZero ? fitness[posAdults[i]] / maxFitness[p] : 0.;
+                contr = (maxFitness[p] > 0.) ? (fitness[i] / maxFitness[p]) : 1.;
+                // contr = (maxFitness[p] > 0.) ? fitness[posAdults[i]] / maxFitness[p] : 0.;
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[posAdults[i]];
                 if (sexAdults[i]) {
                     fathersPos[p][next] = posAdults[i];
@@ -365,22 +361,10 @@ class Sites {
 
     /* inheritance for sexual reproduction (two parent) */
     void inherit(int posOffspring, int posMother, int posFather) {
-        int k;
-        int[] samplePos;
-
-        k = Auxils.binomialSamplerRecombination.sample();
-        samplePos = Auxils.permutationSamplerRecombination.sample();
-            for (int l  = 0; l < k; l++)
-                genotype[posOffspring][evol.allMother[samplePos[l]]] = genotype[posMother][evol.allMother[samplePos[l]]];
-            for (int l  = k; l < evol.allLoci; l++)
-                genotype[posOffspring][evol.allMother[samplePos[l]]] = genotype[posMother][evol.allFather[samplePos[l]]];
-
-        k = Auxils.binomialSamplerRecombination.sample();
-        samplePos = Auxils.permutationSamplerRecombination.sample();
-        for (int l  = 0; l < k; l++)
-            genotype[posOffspring][evol.allFather[samplePos[l]]] = genotype[posFather][evol.allMother[samplePos[l]]];
-        for (int l  = k; l < evol.allLoci; l++)
-            genotype[posOffspring][evol.allFather[samplePos[l]]] = genotype[posFather][evol.allFather[samplePos[l]]];
+        for (int l = 0; l < evol.allLoci; l++) {
+            genotype[posOffspring][evol.allMother[l]] = genotype[posMother][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
+            genotype[posOffspring][evol.allFather[l]] = genotype[posFather][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
+        }
     }
 
     void mutate(int posOffspring) {
@@ -938,8 +922,6 @@ class Init {
         }
         pSex = comm.pSex >= 0 ? comm.pSex : Auxils.random.nextDouble();
     }
-
-
 }
 
 
@@ -1047,7 +1029,6 @@ class Reader {
                         break;
                 }
             }
-
         }
     }
 }
