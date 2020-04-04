@@ -98,7 +98,6 @@ public class EvolSex {
             long endTime = System.currentTimeMillis();
             System.out.println("EvolMetac took " + (endTime - startTime) +
                     " milliseconds.");
-
         }
     }
 }
@@ -123,6 +122,8 @@ class Sites {
     double[][] genotype;
     double[] pSex;
 
+    double[][][] newborns;
+
     double[][] environment;
     double[] maxFitness;
 
@@ -132,9 +133,6 @@ class Sites {
     double[][] fathersProb;
     double[][] fathersCumProb;
     double[][] mothersCumProb;
-
-
-
 
     public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int dr) {
         comm = cmm;
@@ -153,6 +151,8 @@ class Sites {
         fitness = new double[totSites];
         genotype = new double[totSites][2 * evol.allLoci];
         pSex = new double[totSites];
+
+        newborns = new double[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
 
         environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
@@ -181,7 +181,8 @@ class Sites {
                         genotype[m][l] = (int) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
                     }
                     for (int l : evol.sexGenes) {
-                        genotype[m][l] = (int) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+//                        genotype[m][l] = (int) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                        genotype[m][l] = (init.pSex < 0.5) ? 0 : 1;
                     }
                     traitPhenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
                     traitFitness[m][tr] = Math.exp(-(Math.pow(traitPhenotype[m][tr] - environment[p][comm.traitDim[tr]], 2)) / evol.divF);
@@ -242,8 +243,7 @@ class Sites {
 
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
-            boolean maxFitnessNotZero = maxFitness[p] > 0.;
-            contr = maxFitnessNotZero ? fitness[i] / maxFitness[p] : 1.;
+            contr = (maxFitness[p] > 0.) ? (fitness[i] / maxFitness[p]) : 1.;
             // contr = maxFitnessNotZero ? fitness[i] / maxFitness[p] : 0.;
             sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
             if (sexAdults[i]) {
@@ -269,35 +269,34 @@ class Sites {
 
     void reproduction() {
         int[] posOffspring;
-        int[] posMothers = new int[comm.nbrNewBorns];
-        int[] posFathers = new int[comm.nbrNewBorns];
-        int m, patchMother;
+        int m, f, patchMother;
+        for (int p = 0; p < comm.nbrPatches; p++) {
+            //sampling parents with replacement!
+            //selfing allowed!
+            for (int i = 0; i < comm.nbrNewborns; i++) {
+                m = Auxils.randIntCumProb(mothersCumProb[p]);
+                patchMother = patch[m];
+                if (sexAdults[m]) {
+                    f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
+                    inherit(p, i, m, f);
+                } else
+                    inherit(p, i, m);
+                mutate(p, i);
+            }
+        }
         for (int p = 0; p < comm.nbrPatches; p++) {
             posOffspring = Auxils.combinationSamplerPositionOffspring.sample();
             Auxils.arrayAdd(posOffspring, p * comm.microsites);
-            //sampling parents with replacement!
-            //selfing allowed!
-            for (int i = 0; i < comm.nbrNewBorns; i++) {
-                m = Auxils.randIntCumProb(mothersCumProb[p]);
-                patchMother = patch[m];
-                posMothers[i] = m;
-                if (sexAdults[m])
-                    posFathers[i] = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
-            }
-            settle(p, posOffspring, posMothers, posFathers);
+            settle(p, posOffspring);
         }
     }
 
     /* install newborns and inherit traits from the parent(s)
      * including mutation */
-    void settle(int p, int[] posOffspring, int[] posMothers, int[] posFathers) {
-        for (int i = 0; i < comm.nbrNewBorns; i++) {
+    void settle(int p, int[] posOffspring) {
+        for (int i = 0; i < comm.nbrNewborns; i++) {
+            System.arraycopy(newborns[p][i], 0, genotype[posOffspring[i]], 0, 2 * evol.allLoci);
             fitness[posOffspring[i]] = 1;
-            if (sexAdults[posMothers[i]]) {
-                inherit(posOffspring[i], posMothers[i], posFathers[i]);
-            } else
-                inherit(posOffspring[i], posMothers[i]);
-            mutate(posOffspring[i]);
             for (int tr = 0; tr < comm.traits; tr++) {
                 traitPhenotype[posOffspring[i]][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
                 traitFitness[posOffspring[i]][tr] = Math.exp(-(Math.pow(traitPhenotype[posOffspring[i]][tr] - environment[p][comm.traitDim[tr]], 2)) / evol.divF);
@@ -306,50 +305,45 @@ class Sites {
             if (maxFitness[p] < fitness[posOffspring[i]])
                 maxFitness[p] = fitness[posOffspring[i]];
             pSex[posOffspring[i]] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.sexGenes))));
+            if (pSex[posOffspring[i]] > 0 && pSex[posOffspring[i]] < 1)
+                System.out.println("shit");
         }
     }
 
     /* inheritance for asexual reproduction (one parent) */
-    void inherit(int posOffspring, int posParent) {
-        System.arraycopy(genotype[posParent], 0, genotype[posOffspring], 0, 2 * evol.allLoci);
+    void inherit(int p, int posOffspring, int posParent) {
+        System.arraycopy(genotype[posParent], 0, newborns[p][posOffspring], 0, 2 * evol.allLoci);
     }
 
     /* inheritance for sexual reproduction (two parent) */
-    void inherit(int posOffspring, int posMother, int posFather) {
+    void inherit(int p, int posOffspring, int posMother, int posFather) {
         for (int l = 0; l < evol.allLoci; l++) {
-            genotype[posOffspring][evol.allMother[l]] = genotype[posMother][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
-            genotype[posOffspring][evol.allFather[l]] = genotype[posFather][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
+            newborns[p][posOffspring][evol.allMother[l]] = genotype[posMother][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
+            newborns[p][posOffspring][evol.allFather[l]] = genotype[posFather][Auxils.random.nextBoolean() ? evol.allMother[l] : evol.allFather[l]];
         }
     }
 
-    void mutate(int posOffspring) {
+    void mutate(int p, int posOffspring) {
         int k;
-        double pSexTemp;
-        int[] somMutLocs, sexMutLocs;
+        int[] somMutLocs;
 
         k = Auxils.binomialSamplerSomatic.sample();
         if (k > 0) {
             CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.traitLoci*2, k);
             somMutLocs = Auxils.arrayElements(evol.somGenes, combinationSampler.sample());
             for (int l : somMutLocs) {
-                genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1) * evol.mutationSize;
+                newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1) * evol.mutationSize;
             }
         }
 
-        k = Auxils.binomialSamplerSex.sample();
-        if (k > 0) {
-            pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
-            CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.sexLoci*2, k);
-            sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
-            for (int l : sexMutLocs) {
-                if (pSexTemp <= 0.)
-                    genotype[posOffspring][l] += 1;
-                else if (pSexTemp >= 1.)
-                    genotype[posOffspring][l] -= 1;
-                else
-                    genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
-            }
-        }
+        // sex - asex switch
+    	if (Auxils.random.nextDouble() <= evol.mutationRateSex)
+    	{
+            for (int l : evol.sexGenes)
+    		{
+                newborns[p][posOffspring][l] = (newborns[p][posOffspring][l] == 0) ? 1 : 0;
+    		}
+    	}
     }
 
     int metaPopSize() {
@@ -530,7 +524,6 @@ class Sites {
         return mean;
     }
 
-
     double fitness() {
         double mean = 0;
         for (int i = 0; i < totSites; i++)
@@ -673,7 +666,7 @@ class Comm {
     double sigmaE = 0.0;
     int microsites = 600;
     double d = 0.1;
-    int nbrNewBorns = (int) (microsites*d);
+    int nbrNewborns = (int) (microsites*d);
     double[] demogrCost = {0.5};
 
     int gridSize = 2;
@@ -690,7 +683,7 @@ class Comm {
     double[][] dispNeighbours = new double[nbrPatches][nbrPatches];
 
     void init() {
-        nbrNewBorns = (int) (microsites*d);
+        nbrNewborns = (int) (microsites*d);
         nbrPatches = gridSize * gridSize;
         neighbours = new double[nbrPatches][nbrPatches];
         dispNeighbours = new double[nbrPatches][nbrPatches];
@@ -736,6 +729,7 @@ class Evol {
     int sexLoci = 10;
     int allLoci = traitLoci + sexLoci;
     double mutationRate = 1e-4;
+    double mutationRateSex = 1e-5;
     double mutationSize = 1;
     double sigmaZ = 0.01;
 
@@ -853,8 +847,6 @@ class Init {
         }
         pSex = comm.pSex >= 0 ? comm.pSex : Auxils.random.nextDouble();
     }
-
-
 }
 
 
@@ -938,6 +930,9 @@ class Reader {
                     case "MU":
                         evol.mutationRate = Double.parseDouble(words[1]);
                         break;
+                    case "MUSEX":
+                        evol.mutationRateSex = Double.parseDouble(words[1]);
+                        break;
                     case "MUSIZE":
                         evol.mutationSize = Double.parseDouble(words[1]);
                         break;
@@ -977,13 +972,11 @@ class Auxils {
 
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
-    static SharedStateDiscreteSampler binomialSamplerSex;
     static CombinationSampler combinationSamplerPositionOffspring;
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
-        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRate);
-        combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewBorns);
+        combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
     }
 
     static void arrayShuffle(int[] array) {
