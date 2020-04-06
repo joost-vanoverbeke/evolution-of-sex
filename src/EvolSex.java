@@ -119,9 +119,9 @@ class Sites {
     double[][] traitPhenotype;
     double[][] traitFitness;
     double[] fitness;
-    byte[][] genotype;
     double[] pSex;
 
+    byte[][] genotype;
     byte[][][] newborns;
 
     double[][] environment;
@@ -181,7 +181,6 @@ class Sites {
                         genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
                     }
                     for (int l : evol.sexGenes) {
-                        genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
                         genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
                     }
                     traitPhenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
@@ -330,7 +329,7 @@ class Sites {
             CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.traitLoci*2, k);
             somMutLocs = Auxils.arrayElements(evol.somGenes, combinationSampler.sample());
             for (int l : somMutLocs) {
-                newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1) * evol.mutationSize;
+                newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
             }
         }
 
@@ -739,7 +738,6 @@ class Evol {
     int allLoci = traitLoci + sexLoci;
     double mutationRate = 1e-4;
     double mutationRateSex = 1e-5;
-    double mutationSize = 1;
     double sigmaZ = 0.01;
 
     int[] allMother;
