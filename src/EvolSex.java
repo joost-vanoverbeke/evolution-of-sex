@@ -44,8 +44,8 @@ public class EvolSex {
                     for (int es = 0; es < comm.envStep.length; es++)
                             for (int dr = 0; dr < comm.dispRate.length; dr++) {
 
-                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; step = %.4f; disp = %.4f%n",
-                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.envStep[es], comm.dispRate[dr]);
+                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; step = %.4f%n",
+                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.envStep[es]);
 
                                 comm.init();
                                 evol.init(comm);
@@ -377,7 +377,7 @@ class Sites {
             CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.traitLoci*2, k);
             somMutLocs = Auxils.arrayElements(evol.somGenes, combinationSampler.sample());
             for (int l : somMutLocs) {
-                genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1) * evol.mutationSize;
+                genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
             }
         }
 
@@ -805,7 +805,6 @@ class Evol {
     int sexLoci = 10;
     int allLoci = traitLoci + sexLoci;
     double mutationRate = 1e-4;
-    double mutationSize = 1;
     double sigmaZ = 0.01;
 
     int[] allMother;
@@ -1004,9 +1003,6 @@ class Reader {
                         break;
                     case "MU":
                         evol.mutationRate = Double.parseDouble(words[1]);
-                        break;
-                    case "MUSIZE":
-                        evol.mutationSize = Double.parseDouble(words[1]);
                         break;
                     case "SIGMAZ":
                         evol.sigmaZ = Double.parseDouble(words[1]);
