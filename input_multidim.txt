@@ -26,9 +26,8 @@ evolution parameters
 OMEGAE              0.05                                     	niche tolerance (default = 0.02)
 TRAITLOCI           40                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
 SEXLOCI		        2                                          number of diploid loci coding the probability of sex (default = 10)
-MU                  0                                     	mutation rate (default = 1e-4)
-MUSEX               0                                     	mutation rate (default = 1e-4)
-MUSIZE				1
+MU                  1e-4                                     	mutation rate (default = 1e-4)
+MUSEX               1e-5                                     	mutation rate (default = 1e-4)
 SIGMAZ              0.01                                     	phenotypic standard deviation (default = 0.01)
 
 
