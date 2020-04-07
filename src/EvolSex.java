@@ -43,8 +43,8 @@ public class EvolSex {
                     for (int es = 0; es < comm.envStep.length; es++)
                             for (int dr = 0; dr < comm.dispRate.length; dr++) {
 
-                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; step = %.4f; disp = %.4f%n",
-                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.envStep[es], comm.dispRate[dr]);
+                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; step = %.4f%n",
+                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.envStep[es]);
 
                                 comm.init();
                                 evol.init(comm);
@@ -53,7 +53,7 @@ public class EvolSex {
 
                                 Sites sites = new Sites(comm, evol, init, dc, es, dr);
 
-                                System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f; maxAbs = %d%n", 0, sites.metaPopSize(), sites.absFitness(), sites.fitness(), sites.pSex(), sites.maxGenotypeValue());
+                                System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f%n", 0, sites.metaPopSize(), sites.absFitness(), sites.fitness(), sites.pSex());
                                 for (int p = 0; p < comm.nbrPatches; p++) {
                                     streamOut.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
                                             comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
@@ -75,7 +75,7 @@ public class EvolSex {
                                     sites.reproduction();
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
-                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f; maxAbs = %d%n", (t + 1), sites.metaPopSize(), sites.absFitness(), sites.fitness(), sites.pSex(), sites.maxGenotypeValue());
+                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f%n", (t + 1), sites.metaPopSize(), sites.absFitness(), sites.fitness(), sites.pSex());
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                                         for (int p = 0; p < comm.nbrPatches; p++) {
@@ -348,17 +348,6 @@ class Sites {
                     newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
             }
         }
-    }
-
-
-    byte maxGenotypeValue() {
-        byte maxAbs = 0;
-        for (int i = 0; i < totSites; i++)
-            for (int j = 0; j < 2*evol.allLoci; j++) {
-                if (Math.abs(genotype[i][j]) > maxAbs)
-                    maxAbs = genotype[i][j];
-            }
-        return maxAbs;
     }
 
     int metaPopSize() {
