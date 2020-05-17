@@ -16,7 +16,6 @@ PSEX 	            0.0											initial probability of sexual reproduction (defa
 COST			1	0.5											demographic cost of sexual reproduction (default = 0.5)
 GRIDSIZE            2                                        	number of patches = gridsize^2 (default = 2)
 ENVTYPE				LOCAL
-ENVSYNC				NO
 PCHANGE		        0.1											probability of environmental change along each niche dimension (default = 0.1)
 ENVSTEP		    1   0.05										    step size of environmental change (default = 0.01)
 M               1   0.01		                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
