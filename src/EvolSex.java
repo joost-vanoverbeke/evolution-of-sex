@@ -51,7 +51,7 @@ public class EvolSex {
 
                                 sites = new Sites(comm, evol, init, dc, es, dr);
 
-                                System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f%n", 0, sites.metaPopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
+                                System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f%n", 0, sites.metaPopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
                                 logResults(0, streamOut, r, dc, es, dr);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
@@ -61,7 +61,7 @@ public class EvolSex {
                                     sites.reproduction();
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
-                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %f; fit = %f; pSex = %f%n", (t + 1), sites.metaPopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
+                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f%n", (t + 1), sites.metaPopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                                         logResults(t+1, streamOut, r, dc, es, dr);
@@ -209,23 +209,22 @@ class Sites {
     }
 
     void changeEnvironment() {
-        boolean syncEnv = comm.envSync.equals("YES");
         boolean globalEnv = comm.envType.equals("GLOBAL");
-        boolean syncChange = syncEnv && (Auxils.random.nextDouble() <= comm.pChange);
         boolean globalChange;
         double globalStep = 0;
         double step;
 
         for (int d = 0; d < comm.envDims; d++) {
-            globalChange = globalEnv && (syncEnv ? syncChange : Auxils.random.nextDouble() <= comm.pChange);
+            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
             if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
-            for (int p = 0; p < comm.nbrPatches; p++)
-                if (syncEnv ? syncChange : (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange))) {
-                    step = !globalEnv ? (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1)) : globalStep;
+            for (int p = 0; p < comm.nbrPatches; p++) {
+                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
+                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                     environment[p][d] = environment[p][d] + step;
                     environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
                     adjustFitness(p, d);
                 }
+            }
         }
     }
 
@@ -637,7 +636,7 @@ class Sites {
 /* Ecological parameters/variables */
 class Comm {
     String envType = "GLOBAL";
-    String envSync = "NO";
+//    String envSync = "NO";
     int envDims = 1;
     int traits = 2;
     double minEnv = 0.2;
@@ -812,9 +811,11 @@ class Init {
                     environment[p][d] = dEnv;
             }
         } else {
-            for (int p = 0; p < comm.nbrPatches; p++)
-                for (int d = 0; d < comm.envDims; d++)
+            for (int p = 0; p < comm.nbrPatches; p++) {
+                for (int d = 0; d < comm.envDims; d++) {
                     environment[p][d] = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
+                }
+            }
         }
 
         for (int p = 0; p < comm.nbrPatches; p++) {
@@ -872,9 +873,6 @@ class Reader {
                         break;
                     case "ENVTYPE":
                         comm.envType = words[1];
-                        break;
-                    case "ENVSYNC":
-                        comm.envSync = words[1];
                         break;
                     case "PCHANGE":
                         comm.pChange = Double.parseDouble(words[1]);
