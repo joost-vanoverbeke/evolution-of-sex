@@ -185,9 +185,7 @@ class Sites {
                     for (int l : evol.sexGenes) {
                         genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
                     }
-//                    traitPhenotype[m][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
                     traitPhenotype[m][tr] = calcPhenotype(m, tr);
-//                    traitFitness[m][tr] = Math.exp(-(Math.pow(traitPhenotype[m][tr] - environment[p][comm.traitDim[tr]], 2)) / evol.divF);
                     traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
                     fitness[m] *= traitFitness[m][tr];
                 }
@@ -315,9 +313,7 @@ class Sites {
             System.arraycopy(newborns[p][i], 0, genotype[posOffspring[i]], 0, 2 * evol.allLoci);
             fitness[posOffspring[i]] = 1;
             for (int tr = 0; tr < comm.traits; tr++) {
-//                traitPhenotype[posOffspring[i]][tr] = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
                 traitPhenotype[posOffspring[i]][tr] = calcPhenotype(posOffspring[i], tr);
-//                traitFitness[posOffspring[i]][tr] = Math.exp(-(Math.pow(traitPhenotype[posOffspring[i]][tr] - environment[p][comm.traitDim[tr]], 2)) / evol.divF);
                 traitFitness[posOffspring[i]][tr] = calcFitness(traitPhenotype[posOffspring[i]][tr], environment[p][comm.traitDim[tr]]);
                 fitness[posOffspring[i]] *= traitFitness[posOffspring[i]][tr];
             }
@@ -636,7 +632,6 @@ class Sites {
 /* Ecological parameters/variables */
 class Comm {
     String envType = "GLOBAL";
-//    String envSync = "NO";
     int envDims = 1;
     int traits = 2;
     double minEnv = 0.2;
