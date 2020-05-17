@@ -257,9 +257,7 @@ class Sites {
 
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
-//            contr = (maxFitness[p] > 0.) ? (fitness[i] / maxFitness[p]) : 1.;
             contr = (maxFitness[p] > 0.) ? fitness[i] / maxFitness[p] : 0.;
-//            contr = (maxFitness[p] > 0.) ? fitness[i] / maxFitness[p] : 1./totSites;
             sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
             if (sexAdults[i]) {
                 fathersPos[p][endPosFathers[p]] = i;
