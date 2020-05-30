@@ -645,7 +645,7 @@ class Comm {
     double sigmaE = 0.0;
     int microsites = 600;
     double d = 0.1;
-    int nbrNewborns = (int) (microsites*d);
+    int nbrNewborns = (int) Math.round(microsites*d);
     double[] demogrCost = {0.5};
 
     int gridSize = 2;
