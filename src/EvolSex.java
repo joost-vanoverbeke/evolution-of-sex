@@ -39,20 +39,21 @@ public class EvolSex {
             for (int r = 0; r < run.runs; r++)
                 for (int dc = 0; dc < comm.demogrCost.length; dc++)
                     for (int es = 0; es < comm.envStep.length; es++)
+                        for (int pd = 0; pd < comm.patchDev.length; pd++)
                             for (int dr = 0; dr < comm.dispRate.length; dr++) {
 
-                                System.out.format("run = %d; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; step = %.4f%n",
-                                        (r + 1), comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.envStep[es]);
+                                System.out.format("run = %d; dims = %d; patchDev = %.2f; traits = %d; demCorr = %.2f; disp = %.4f; step = %.4f%n",
+                                        (r + 1), comm.envDims, comm.patchDev[pd], comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.envStep[es]);
 
                                 comm.init();
                                 evol.init(comm);
                                 Auxils.init(comm, evol);
-                                Init init = new Init(comm);
+                                Init init = new Init(comm, pd);
 
-                                sites = new Sites(comm, evol, init, dc, es, dr);
+                                sites = new Sites(comm, evol, init, dc, es, pd, dr);
 
                                 System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f%n", 0, sites.metaPopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
-                                logResults(0, streamOut, r, dc, es, dr);
+                                logResults(0, streamOut, r, dc, es, pd, dr);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
                                     sites.changeEnvironment();
@@ -64,7 +65,7 @@ public class EvolSex {
                                         System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f%n", (t + 1), sites.metaPopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
-                                        logResults(t+1, streamOut, r, dc, es, dr);
+                                        logResults(t+1, streamOut, r, dc, es, pd, dr);
                                     }
                                 }
                             }
@@ -76,7 +77,7 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
+        out.print("gridsize;patches;patch_dev;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
                 + "run;time;patch;N;trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;fitness_geom;load_mean;load_var;S_mean;S_var;pSex_mean;pSex_var");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
@@ -85,10 +86,10 @@ public class EvolSex {
         out.println("");
     }
 
-    static void logResults(int t, PrintWriter out, int r, int dc, int es, int dr) {
+    static void logResults(int t, PrintWriter out, int r, int dc, int es, int pd, int dr) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
-                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
+            out.format("%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
+                    comm.gridSize, comm.nbrPatches, comm.patchDev[pd], comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
             out.format(";%d;%d;%d",
                     r + 1, t, p + 1);
             out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
@@ -115,6 +116,7 @@ class Sites {
 
     int dcPos;
     int esPos;
+    int pdPos;
     int drPos;
 
     int[] patch;
@@ -126,6 +128,8 @@ class Sites {
     byte[][] genotype;
     byte[][][] newborns;
 
+    double[] dimEnv;
+
     double[][] environment;
     double[] maxFitness;
 
@@ -136,11 +140,12 @@ class Sites {
     double[][] fathersCumProb;
     double[][] mothersCumProb;
 
-    public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int dr) {
+    public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int pd, int dr) {
         comm = cmm;
         evol = evl;
         dcPos = dc;
         esPos = es;
+        pdPos = pd;
         drPos = dr;
 
         comm.calcDispNeighbours(drPos);
@@ -155,6 +160,8 @@ class Sites {
         pSex = new double[totSites];
 
         newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
+
+        dimEnv = new double [comm.envDims];
 
         environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
@@ -207,21 +214,29 @@ class Sites {
     }
 
     void changeEnvironment() {
-        boolean globalEnv = comm.envType.equals("GLOBAL");
-        boolean globalChange;
-        double globalStep = 0;
-        double step;
-
+        double dimStep, envStep;
+        boolean dimChange, envChange = false;
         for (int d = 0; d < comm.envDims; d++) {
-            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
-            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+            dimChange = Auxils.random.nextDouble() <= comm.pChange;
+            if (dimChange) {
+                dimStep = comm.envStep[esPos] * (Auxils.random.nextDouble() <= 0.5 ? -1 : 1);
+                dimEnv[d] = dimEnv[d] + dimStep;
+                dimEnv[d] = Auxils.adjustToRange(dimEnv[d], comm.minEnv, comm.maxEnv);
+            }
             for (int p = 0; p < comm.nbrPatches; p++) {
-                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
-                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
-                    environment[p][d] = environment[p][d] + step;
-                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
-                    adjustFitness(p, d);
+                if (comm.patchDev[pdPos] == 0) {
+                    if (dimChange)
+                        environment[p][d] = dimEnv[d];
+                } else {
+                    envChange = Auxils.random.nextDouble() <= comm.pChange;
+                    if (envChange) {
+                        envStep = comm.envStep[esPos] * (Auxils.random.nextDouble() <= 0.5 ? -1 : 1);
+                        environment[p][d] = environment[p][d] + envStep;
+                        environment[p][d] = Auxils.adjustToRange(environment[p][d], Math.max(comm.minEnv, dimEnv[d] - comm.patchDev[pdPos]), Math.min(comm.maxEnv, dimEnv[d] + comm.patchDev[pdPos]));
+                    }
                 }
+                if ((comm.patchDev[pdPos] == 0 && dimChange) || envChange)
+                    adjustFitness(p, d);
             }
         }
     }
@@ -637,11 +652,12 @@ class Sites {
 
 /* Ecological parameters/variables */
 class Comm {
-    String envType = "GLOBAL";
     int envDims = 1;
     int traits = 2;
     double minEnv = 0.2;
     double maxEnv = 0.8;
+    double[] patchDev = {1};
+
     double sigmaE = 0.0;
     int microsites = 600;
     double d = 0.1;
@@ -793,29 +809,25 @@ class Run {
 class Init {
     double pSex;
 
+    double[] dimEnv;
     double[][] environment;
     int[] N;
     double[][] genotype;
 
-    public Init(Comm comm) {
+    public Init(Comm comm, int pd) {
         double dEnv;
+        dimEnv = new double[comm.envDims];
         environment = new double[comm.nbrPatches][comm.envDims];
         N = new int[comm.nbrPatches];
         genotype = new double[comm.nbrPatches][comm.traits];
 
         Arrays.fill(N, comm.microsites);
 
-        if (comm.envType.equals("GLOBAL")) {
-            for (int d = 0; d < comm.envDims; d++) {
-                dEnv = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
-                for (int p = 0; p < comm.nbrPatches; p++)
-                    environment[p][d] = dEnv;
-            }
-        } else {
+        for (int d = 0; d < comm.envDims; d++) {
+            dimEnv[d] = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
             for (int p = 0; p < comm.nbrPatches; p++) {
-                for (int d = 0; d < comm.envDims; d++) {
-                    environment[p][d] = comm.minEnv + (Auxils.random.nextDouble() * (comm.maxEnv - comm.minEnv));
-                }
+                environment[p][d] = (dimEnv[d] - comm.patchDev[pd]) + (Auxils.random.nextDouble() * (2*comm.patchDev[pd]));
+                environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
             }
         }
 
@@ -851,6 +863,12 @@ class Reader {
                     case "MAXENV":
                         comm.maxEnv = Double.parseDouble(words[1]);
                         break;
+                    case "PATCHDEV":
+                        size = Integer.parseInt(words[1]);
+                        comm.patchDev = new double[size];
+                        for (int i = 0; i < size; i++)
+                            comm.patchDev[i] = Double.parseDouble(words[2+i]);
+                        break;
                     case "SIGMAE":
                         comm.sigmaE = Double.parseDouble(words[1]);
                         break;
@@ -871,9 +889,6 @@ class Reader {
                         break;
                     case "GRIDSIZE":
                         comm.gridSize = Integer.parseInt(words[1]);
-                        break;
-                    case "ENVTYPE":
-                        comm.envType = words[1];
                         break;
                     case "PCHANGE":
                         comm.pChange = Double.parseDouble(words[1]);
