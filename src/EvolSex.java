@@ -76,7 +76,7 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
+        out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;fitness_geom;load_mean;load_var;S_mean;S_var;pSex_mean;pSex_var");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
@@ -87,8 +87,8 @@ public class EvolSex {
 
     static void logResults(int t, PrintWriter out, int r, int dc, int es, int dr) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f",
-                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
+            out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f;%f",
+                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
             out.format(";%d;%d;%d",
                     r + 1, t, p + 1);
             out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
@@ -708,6 +708,7 @@ class Evol {
     int sexLoci = 10;
     int allLoci = traitLoci + sexLoci;
     double mutationRate = 1e-4;
+    double mutationRateSex = 1e-4;
     double sigmaZ = 0.01;
 
     int[] allMother;
@@ -906,6 +907,9 @@ class Reader {
                     case "MU":
                         evol.mutationRate = Double.parseDouble(words[1]);
                         break;
+                    case "MUSEX":
+                        evol.mutationRateSex = Double.parseDouble(words[1]);
+                        break;
                     case "SIGMAZ":
                         evol.sigmaZ = Double.parseDouble(words[1]);
                         break;
@@ -946,7 +950,7 @@ class Auxils {
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
-        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRate);
+        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRateSex);
         combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
     }
 
