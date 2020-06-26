@@ -1623,7 +1623,7 @@ class Init {
                 genotype[p][tr] = environment[p][comm.traitDim[tr]];
             }
         }
-        pSex = comm.pSex >= 0 ? comm.pSex : Auxils.random.nextDouble();
+        pSex = comm.pSex;
     }
 }
 
