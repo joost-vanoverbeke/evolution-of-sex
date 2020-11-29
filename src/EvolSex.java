@@ -79,9 +79,9 @@ public class EvolSex {
         out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
                 + "run;time;patch;N;trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;fitness_geom;load_mean;load_var;S_mean;S_var;pSex_mean;pSex_var");
         for (int tr = 0; tr < comm.traits; tr++)
-            out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
+            out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;genotype_min_tr%d;genotype_max_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;phenotype_min_tr%d;phenotype_max_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
                             + "genotype_meta_var_tr%d;phenotype_meta_var_tr%d",
-                    tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1);
+                    tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1);
         out.println("");
     }
 
@@ -94,8 +94,8 @@ public class EvolSex {
             out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
                     sites.popSize(), sites.traitFitnessMean(p), sites.traitFitnessVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.relFitnessGeom(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
             for (int tr = 0; tr < comm.traits; tr++)
-                out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f",
-                        sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotypeMean(p, tr), sites.genotypeVar(p, tr), sites.phenotypeMean(p, tr), sites.phenotypeVar(p, tr), sites.traitFitnessMean(p, tr), sites.traitFitnessVar(p, tr),
+                out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
+                        sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotypeMean(p, tr), sites.genotypeVar(p, tr), sites.genotypeMin(p, tr), sites.genotypeMax(p, tr), sites.phenotypeMean(p, tr), sites.phenotypeVar(p, tr), sites.phenotypeMin(p, tr), sites.phenotypeMax(p, tr), sites.traitFitnessMean(p, tr), sites.traitFitnessVar(p, tr),
                         sites.genotypeVar(tr), sites.phenotypeVar(tr));
             out.println("");
         }
@@ -399,6 +399,28 @@ class Sites {
         return var;
     }
 
+    double genotypeMin(int p, int t) {
+        double gtp = Auxils.arrayMean(Auxils.arrayElements(genotype[p * comm.microsites], evol.traitGenes[t]));
+        double min = gtp;
+        for (int i = p * comm.microsites + 1; i < (p + 1) * comm.microsites; i++) {
+            gtp = Auxils.arrayMean(Auxils.arrayElements(genotype[i], evol.traitGenes[t]));
+            if (gtp < min)
+                min = gtp;
+        }
+        return min;
+    }
+
+    double genotypeMax(int p, int t) {
+        double gtp = Auxils.arrayMean(Auxils.arrayElements(genotype[p * comm.microsites], evol.traitGenes[t]));
+        double max = gtp;
+        for (int i = p * comm.microsites + 1; i < (p + 1) * comm.microsites; i++) {
+            gtp = Auxils.arrayMean(Auxils.arrayElements(genotype[i], evol.traitGenes[t]));
+            if (gtp > max)
+                max = gtp;
+        }
+        return max;
+    }
+
     double phenotypeMean(int t) {
         double mean = 0;
         for (int i = 0; i < totSites; i++)
@@ -431,6 +453,24 @@ class Sites {
             var += Math.pow(mean - traitPhenotype[i][t], 2);
         var /= popSize();
         return var;
+    }
+
+    double phenotypeMin(int p, int t) {
+        double min = traitPhenotype[p * comm.microsites][t];
+        for (int i = p * comm.microsites + 1; i < (p + 1) * comm.microsites; i++) {
+            if (traitPhenotype[i][t] < min)
+                min = traitPhenotype[i][t];
+        }
+        return min;
+    }
+
+    double phenotypeMax(int p, int t) {
+        double max = traitPhenotype[p * comm.microsites][t];
+        for (int i = p * comm.microsites + 1; i < (p + 1) * comm.microsites; i++) {
+            if (traitPhenotype[i][t] > max)
+                max = traitPhenotype[i][t];
+        }
+        return max;
     }
 
     double traitFitnessMax(int p, int t) {
