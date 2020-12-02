@@ -748,6 +748,7 @@ class Evol {
     int sexLoci = 10;
     int allLoci = traitLoci + sexLoci;
     double mutationRate = 1e-4;
+    double mutationRateSex = 1e-5;
     double sigmaZ = 0.01;
 
     int[] allMother;
@@ -942,6 +943,9 @@ class Reader {
                     case "MU":
                         evol.mutationRate = Double.parseDouble(words[1]);
                         break;
+                    case "MUSEX":
+                        evol.mutationRateSex = Double.parseDouble(words[1]);
+                        break;
                     case "SIGMAZ":
                         evol.sigmaZ = Double.parseDouble(words[1]);
                         break;
@@ -982,7 +986,7 @@ class Auxils {
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
-        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRate);
+        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRateSex);
         combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
     }
 
