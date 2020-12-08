@@ -236,14 +236,28 @@ class Sites {
         double step;
 
         if (Auxils.random.nextDouble() <= comm.pChange) {
-//            step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
-            for (int d = 0; d < comm.envDims; d++) {
-                globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+            if(globalEnv) {
+            step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                for (int d = 0; d < comm.envDims; d++) {
+//                    globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+                    for (int p = 0; p < comm.nbrPatches; p++) {
+//                        step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                        environment[p][d] = environment[p][d] + step;
+                        environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv) / 2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv) / 2);
+                        adjustFitness(p, d);
+                    }
+                }
+            }
+            else {
+                step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                 for (int p = 0; p < comm.nbrPatches; p++) {
-                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
-                    environment[p][d] = environment[p][d] + step;
-                    environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv)/2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv)/2);
-                    adjustFitness(p, d);
+//                    step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                    for (int d = 0; d < comm.envDims; d++) {
+//                        step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                        environment[p][d] = environment[p][d] + step;
+                        environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv) / 2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv) / 2);
+                        adjustFitness(p, d);
+                    }
                 }
             }
         }
