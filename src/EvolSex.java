@@ -746,8 +746,6 @@ class Evol {
 
     int[] allMother;
     int[] allFather;
-    int[] allMotherShuffle;
-    int[] allFatherShuffle;
     int[] allGenes;
     int[] somMother;
     int[] somFather;
@@ -770,8 +768,6 @@ class Evol {
 
         allMother = new int[allLoci];
         allFather = new int[allLoci];
-        allMotherShuffle = allMother.clone();
-        allFatherShuffle = allFather.clone();
         allGenes = new int[2 * allLoci];
         somMother = new int[traitLoci];
         somFather = new int[traitLoci];
