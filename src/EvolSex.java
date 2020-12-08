@@ -127,6 +127,7 @@ class Sites {
     byte[][][] newborns;
 
     double[][] environment;
+    double[][] environmentCenter;
     double[] maxFitness;
 
     boolean[] sexAdults;
@@ -157,6 +158,7 @@ class Sites {
         newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
 
         environment = new double[comm.nbrPatches][comm.envDims];
+        environmentCenter = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
 
         sexAdults = new boolean[totSites];
@@ -170,6 +172,7 @@ class Sites {
         Arrays.fill(maxFitness, 0);
 
         for (int p = 0; p < comm.nbrPatches; p++) {
+            if (comm.envDims >= 0) System.arraycopy(init.environment[p], 0, environmentCenter[p], 0, comm.envDims);
             if (comm.envDims >= 0) System.arraycopy(init.environment[p], 0, environment[p], 0, comm.envDims);
             for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++)
                 patch[m] = p;
@@ -206,20 +209,40 @@ class Sites {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
 
+//    void changeEnvironment() {
+//        boolean globalEnv = comm.envType.equals("GLOBAL");
+//        boolean globalChange;
+//        double globalStep = 0;
+//        double step;
+//
+//        for (int d = 0; d < comm.envDims; d++) {
+//            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
+//            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+//            for (int p = 0; p < comm.nbrPatches; p++) {
+//                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
+//                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+//                    environment[p][d] = environment[p][d] + step;
+//                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+//                    adjustFitness(p, d);
+//                }
+//            }
+//        }
+//    }
+
     void changeEnvironment() {
         boolean globalEnv = comm.envType.equals("GLOBAL");
         boolean globalChange;
         double globalStep = 0;
         double step;
 
-        for (int d = 0; d < comm.envDims; d++) {
-            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
-            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
-            for (int p = 0; p < comm.nbrPatches; p++) {
-                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
-                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+        if (Auxils.random.nextDouble() <= comm.pChange) {
+            step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+            for (int d = 0; d < comm.envDims; d++) {
+//                globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+                for (int p = 0; p < comm.nbrPatches; p++) {
+//                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                     environment[p][d] = environment[p][d] + step;
-                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+                    environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv)/2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv)/2);
                     adjustFitness(p, d);
                 }
             }
