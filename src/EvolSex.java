@@ -186,7 +186,7 @@ class Sites {
                         genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
                     }
                     for (int l : evol.sexGenes) {
-                        genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                        genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
                     }
                     traitPhenotype[m][tr] = calcPhenotype(m, tr);
                     traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
@@ -359,8 +359,7 @@ class Sites {
 
     void mutate(int p, int posOffspring) {
         int k;
-        int[] somMutLocs, sexMutLocs;
-        double pSexTemp;
+        int[] somMutLocs;
 
         k = Auxils.binomialSamplerSomatic.sample();
         if (k > 0) {
@@ -371,20 +370,14 @@ class Sites {
             }
         }
 
-        k = Auxils.binomialSamplerSex.sample();
-        if (k > 0) {
-            pSexTemp = Auxils.arrayMean(Auxils.arrayElements(newborns[p][posOffspring], evol.sexGenes));
-            CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.sexLoci*2, k);
-            sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
-            for (int l : sexMutLocs) {
-                if (pSexTemp <= 0.)
-                    newborns[p][posOffspring][l] += 1;
-                else if (pSexTemp >= 1.)
-                    newborns[p][posOffspring][l] -= 1;
-                else
-                    newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
-            }
-        }
+        // sex - asex switch
+    	if (Auxils.random.nextDouble() <= evol.mutationRateSex)
+    	{
+            for (int l : evol.sexGenes)
+    		{
+                newborns[p][posOffspring][l] = (byte) ((newborns[p][posOffspring][l] == 0) ? 1 : 0);
+    		}
+    	}
     }
 
     int metaPopSize() {
@@ -884,7 +877,7 @@ class Init {
                 genotype[p][tr] = environment[p][comm.traitDim[tr]];
             }
         }
-        pSex = comm.pSex;
+        pSex = comm.pSex >= 0 ? comm.pSex : Auxils.random.nextDouble();
     }
 }
 
@@ -1004,12 +997,10 @@ class Auxils {
 
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
-    static SharedStateDiscreteSampler binomialSamplerSex;
     static CombinationSampler combinationSamplerPositionOffspring;
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
-        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRateSex);
         combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
     }
 
