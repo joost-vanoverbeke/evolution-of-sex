@@ -237,25 +237,27 @@ class Sites {
 
         if (Auxils.random.nextDouble() <= comm.pChange) {
             if(globalEnv) {
-            step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+//            step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                 for (int d = 0; d < comm.envDims; d++) {
-//                    globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+                    globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
                     for (int p = 0; p < comm.nbrPatches; p++) {
-//                        step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                        step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                         environment[p][d] = environment[p][d] + step;
-                        environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv) / 2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv) / 2);
+                        environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+//                        environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv) / 2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv) / 2);
                         adjustFitness(p, d);
                     }
                 }
             }
             else {
-                step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+//                step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                 for (int p = 0; p < comm.nbrPatches; p++) {
 //                    step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                     for (int d = 0; d < comm.envDims; d++) {
-//                        step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                        step = (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
                         environment[p][d] = environment[p][d] + step;
-                        environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv) / 2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv) / 2);
+                        environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+//                        environment[p][d] = Auxils.adjustToRange(environment[p][d], environmentCenter[p][d] - (comm.maxEnv - comm.minEnv) / 2, environmentCenter[p][d] + (comm.maxEnv - comm.minEnv) / 2);
                         adjustFitness(p, d);
                     }
                 }
