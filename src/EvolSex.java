@@ -118,6 +118,8 @@ class Sites {
     int drPos;
 
     int[] patch;
+    int[] origin;
+    int[][] newbornsOrigin;
     double[][] traitPhenotype;
     double[][] traitFitness;
     double[] fitness;
@@ -148,12 +150,14 @@ class Sites {
         totSites = comm.nbrPatches * comm.microsites;
 
         patch = new int[totSites];
+        origin = new int[totSites];
         traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
         genotype = new byte[totSites][2 * evol.allLoci];
         pSex = new double[totSites];
 
+        newbornsOrigin = new int[comm.nbrPatches][comm.nbrNewborns];
         newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
 
         environment = new double[comm.nbrPatches][comm.envDims];
@@ -172,7 +176,7 @@ class Sites {
         for (int p = 0; p < comm.nbrPatches; p++) {
             if (comm.envDims >= 0) System.arraycopy(init.environment[p], 0, environment[p], 0, comm.envDims);
             for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++)
-                patch[m] = p;
+                patch[m] = origin[m] = p;
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
                 fitness[m] = 1;
@@ -289,6 +293,7 @@ class Sites {
             for (int i = 0; i < comm.nbrNewborns; i++) {
                 m = Auxils.randIntCumProb(mothersCumProb[p]);
                 patchMother = patch[m];
+                newbornsOrigin[p][i] = patchMother;
                 if (sexAdults[m]) {
                     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
                     inherit(p, i, m, f);
@@ -307,17 +312,20 @@ class Sites {
     /* install newborns and inherit traits from the parent(s)
      * including mutation */
     void settle(int p, int[] posOffspring) {
+        int pos;
         for (int i = 0; i < comm.nbrNewborns; i++) {
+            pos = posOffspring[i];
+            origin[pos] = newbornsOrigin[p][i];
             System.arraycopy(newborns[p][i], 0, genotype[posOffspring[i]], 0, 2 * evol.allLoci);
-            fitness[posOffspring[i]] = 1;
+            fitness[pos] = 1;
             for (int tr = 0; tr < comm.traits; tr++) {
-                traitPhenotype[posOffspring[i]][tr] = calcPhenotype(posOffspring[i], tr);
-                traitFitness[posOffspring[i]][tr] = calcFitness(traitPhenotype[posOffspring[i]][tr], environment[p][comm.traitDim[tr]]);
-                fitness[posOffspring[i]] *= traitFitness[posOffspring[i]][tr];
+                traitPhenotype[pos][tr] = calcPhenotype(pos, tr);
+                traitFitness[pos][tr] = calcFitness(traitPhenotype[pos][tr], environment[p][comm.traitDim[tr]]);
+                fitness[pos] *= traitFitness[pos][tr];
             }
-            if (maxFitness[p] < fitness[posOffspring[i]])
-                maxFitness[p] = fitness[posOffspring[i]];
-            pSex[posOffspring[i]] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.sexGenes))));
+            if (maxFitness[p] < fitness[pos])
+                maxFitness[p] = fitness[pos];
+            pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
         }
     }
 
