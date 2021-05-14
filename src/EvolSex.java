@@ -8,8 +8,13 @@ import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
 import org.apache.commons.rng.sampling.distribution.ZigguratNormalizedGaussianSampler;
 import org.apache.commons.rng.simple.RandomSource;
 
+import java.awt.*;
 import java.io.*;
 import java.util.Arrays;
+
+enum OriginType {
+    IMM, RES, IMMSEX, RESSEX, MIXIMMSEX, MIXRESSEX
+}
 
 
 /* class EvolvingMetacommunity
@@ -119,7 +124,9 @@ class Sites {
 
     int[] patch;
     int[] origin;
+    OriginType[] type;
     int[][] newbornsOrigin;
+    OriginType[][] newbornsType;
     double[][] traitPhenotype;
     double[][] traitFitness;
     double[] fitness;
@@ -138,6 +145,8 @@ class Sites {
     double[][] fathersCumProb;
     double[][] mothersCumProb;
 
+
+
     public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int dr) {
         comm = cmm;
         evol = evl;
@@ -151,14 +160,16 @@ class Sites {
 
         patch = new int[totSites];
         origin = new int[totSites];
+        type = new OriginType[totSites];
         traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
         genotype = new byte[totSites][2 * evol.allLoci];
         pSex = new double[totSites];
 
-        newbornsOrigin = new int[comm.nbrPatches][comm.nbrNewborns];
         newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
+        newbornsOrigin = new int[comm.nbrPatches][comm.nbrNewborns];
+        newbornsType = new OriginType[comm.nbrPatches][comm.nbrNewborns];
 
         environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
@@ -179,6 +190,7 @@ class Sites {
                 patch[m] = origin[m] = p;
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
+                type[m] = OriginType.RES;
                 fitness[m] = 1;
                 for (int tr = 0; tr < comm.traits; tr++) {
                     traitFitness[m][tr] = 1;
@@ -296,9 +308,23 @@ class Sites {
                 newbornsOrigin[p][i] = patchMother;
                 if (sexAdults[m]) {
                     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
+                    if (origin[m] == origin[f]) {
+                        if (origin[m] == p)
+                            newbornsType[p][i] = OriginType.RESSEX;
+                        else
+                            newbornsType[p][i] = OriginType.IMMSEX;
+                    } else if (origin[m] == p || origin[f] == p)
+                        newbornsType[p][i] = OriginType.MIXRESSEX;
+                    else
+                        newbornsType[p][i] = OriginType.MIXIMMSEX;
                     inherit(p, i, m, f);
-                } else
+                } else {
+                    if (origin[m] == p)
+                        newbornsType[p][i] = OriginType.RES;
+                    else
+                        newbornsType[p][i] = OriginType.IMM;
                     inherit(p, i, m);
+                }
                 mutate(p, i);
             }
         }
@@ -316,6 +342,7 @@ class Sites {
         for (int i = 0; i < comm.nbrNewborns; i++) {
             pos = posOffspring[i];
             origin[pos] = newbornsOrigin[p][i];
+            type[pos] = newbornsType[p][i];
             System.arraycopy(newborns[p][i], 0, genotype[posOffspring[i]], 0, 2 * evol.allLoci);
             fitness[pos] = 1;
             for (int tr = 0; tr < comm.traits; tr++) {
