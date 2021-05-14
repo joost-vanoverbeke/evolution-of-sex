@@ -307,17 +307,19 @@ class Sites {
     /* install newborns and inherit traits from the parent(s)
      * including mutation */
     void settle(int p, int[] posOffspring) {
+        int pos;
         for (int i = 0; i < comm.nbrNewborns; i++) {
-            System.arraycopy(newborns[p][i], 0, genotype[posOffspring[i]], 0, 2 * evol.allLoci);
-            fitness[posOffspring[i]] = 1;
+            pos = posOffspring[i];
+            System.arraycopy(newborns[p][i], 0, genotype[pos], 0, 2 * evol.allLoci);
+            fitness[pos] = 1;
             for (int tr = 0; tr < comm.traits; tr++) {
-                traitPhenotype[posOffspring[i]][tr] = calcPhenotype(posOffspring[i], tr);
-                traitFitness[posOffspring[i]][tr] = calcFitness(traitPhenotype[posOffspring[i]][tr], environment[p][comm.traitDim[tr]]);
-                fitness[posOffspring[i]] *= traitFitness[posOffspring[i]][tr];
+                traitPhenotype[pos][tr] = calcPhenotype(pos, tr);
+                traitFitness[pos][tr] = calcFitness(traitPhenotype[pos][tr], environment[p][comm.traitDim[tr]]);
+                fitness[pos] *= traitFitness[pos][tr];
             }
-            if (maxFitness[p] < fitness[posOffspring[i]])
-                maxFitness[p] = fitness[posOffspring[i]];
-            pSex[posOffspring[i]] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring[i]], evol.sexGenes))));
+            if (maxFitness[p] < fitness[pos])
+                maxFitness[p] = fitness[pos];
+            pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
         }
     }
 
