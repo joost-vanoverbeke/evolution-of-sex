@@ -331,7 +331,7 @@ class Sites {
                         newbornsOriginRatio[p][i] = 1.;
                     else
 //                        newbornsOriginRatio[p][i] = (originRatio[m] + originRatio[f])/4.;
-                        newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f])/2.)*(0.9);
+                        newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f])/2.)*(1-comm.d);
                     if (origin[m] == origin[f]) {
                         if (origin[m] == p)
                             newbornsType[p][i] = OriginType.RESSEX;
