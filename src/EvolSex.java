@@ -139,9 +139,13 @@ class Sites {
     int[] patch;
     int[] origin;
     double[] originRatio;
+    double[] originSexRatio;
+    double[] originAsexRatio;
     OriginType[] type;
     int[][] newbornsOrigin;
     double[][] newbornsOriginRatio;
+    double[][] newbornsOriginSexRatio;
+    double[][] newbornsOriginAsexRatio;
     OriginType[][] newbornsType;
     double[][] traitPhenotype;
     double[][] traitFitness;
@@ -177,6 +181,8 @@ class Sites {
         patch = new int[totSites];
         origin = new int[totSites];
         originRatio = new double[totSites];
+        originSexRatio = new double[totSites];
+        originAsexRatio = new double[totSites];
         type = new OriginType[totSites];
         traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
@@ -187,6 +193,8 @@ class Sites {
         newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
         newbornsOrigin = new int[comm.nbrPatches][comm.nbrNewborns];
         newbornsOriginRatio = new double[comm.nbrPatches][comm.nbrNewborns];
+        newbornsOriginSexRatio = new double[comm.nbrPatches][comm.nbrNewborns];
+        newbornsOriginAsexRatio = new double[comm.nbrPatches][comm.nbrNewborns];
         newbornsType = new OriginType[comm.nbrPatches][comm.nbrNewborns];
 
         environment = new double[comm.nbrPatches][comm.envDims];
@@ -202,6 +210,8 @@ class Sites {
         double indGtp;
         Arrays.fill(maxFitness, 0);
         Arrays.fill(originRatio, 0.);
+        Arrays.fill(originSexRatio, 0.);
+        Arrays.fill(originAsexRatio, 0.);
 
         for (int p = 0; p < comm.nbrPatches; p++) {
             if (comm.envDims >= 0) System.arraycopy(init.environment[p], 0, environment[p], 0, comm.envDims);
@@ -327,11 +337,17 @@ class Sites {
                 newbornsOrigin[p][i] = patchMother;
                 if (sexAdults[m]) {
                     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
-                    if (patchMother != p)
+                    if (patchMother != p) {
                         newbornsOriginRatio[p][i] = 1.;
-                    else
+                        newbornsOriginSexRatio[p][i] = 1.;
+                        newbornsOriginAsexRatio[p][i] = 1.;
+                    }
+                    else {
 //                        newbornsOriginRatio[p][i] = (originRatio[m] + originRatio[f])/4.;
-                        newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f])/2.)*(1-comm.d);
+                        newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f]) / 2.) * (1 - comm.d);
+                        newbornsOriginSexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2.) * (1 - comm.d);
+                        newbornsOriginAsexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2. * 0.5) * (1 - comm.d);
+                    }
                     if (origin[m] == origin[f]) {
                         if (origin[m] == p)
                             newbornsType[p][i] = OriginType.RESSEX;
@@ -343,16 +359,22 @@ class Sites {
                         newbornsType[p][i] = OriginType.MIXIMMSEX;
                     inherit(p, i, m, f);
                 } else {
+                    if (patchMother != p) {
+                        newbornsOriginRatio[p][i] = 1.;
+                        newbornsOriginSexRatio[p][i] = 1.;
+                        newbornsOriginAsexRatio[p][i] = 1.;
+                    }
+                    else {
+//                        newbornsOriginRatio[p][i] = originRatio[m]/2.;
+                        newbornsOriginRatio[p][i] = originRatio[m] * (1 - comm.d);
+                        newbornsOriginSexRatio[p][i] = originSexRatio[m] * 0.5 * (1 - comm.d);
+                        newbornsOriginAsexRatio[p][i] = originAsexRatio[m] * (1 - comm.d);
+                    }
                     if (origin[m] == p)
                         newbornsType[p][i] = OriginType.RES;
                     else
                         newbornsType[p][i] = OriginType.IMM;
                     inherit(p, i, m);
-                    if (patchMother != p)
-                        newbornsOriginRatio[p][i] = 1.;
-                    else
-//                        newbornsOriginRatio[p][i] = originRatio[m]/2.;
-                        newbornsOriginRatio[p][i] = originRatio[m]*(0.9);
                 }
                 if (patchMother != p)
                     newbornsType[p][i] = OriginType.F1IMM;
@@ -374,6 +396,8 @@ class Sites {
             pos = posOffspring[i];
             origin[pos] = newbornsOrigin[p][i];
             originRatio[pos] = newbornsOriginRatio[p][i];
+            originSexRatio[pos] = newbornsOriginSexRatio[p][i];
+            originAsexRatio[pos] = newbornsOriginAsexRatio[p][i];
             type[pos] = newbornsType[p][i];
             System.arraycopy(newborns[p][i], 0, genotype[posOffspring[i]], 0, 2 * evol.allLoci);
             fitness[pos] = 1;
@@ -694,6 +718,97 @@ class Sites {
         }
         return ratio;
     }
+
+
+    double originSexRatioMean() {
+        double mean = 0;
+        for (int i = 0; i < totSites; i++)
+            mean += originSexRatio[i];
+        mean /= metaPopSize();
+        return mean;
+    }
+
+    double originSexRatioMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            mean += originSexRatio[i];
+        mean /= popSize();
+        return mean;
+    }
+
+    double originSexRatioMax(int p) {
+        double max = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (originSexRatio[i] > max)
+                max = originSexRatio[i];
+        return max;
+    }
+
+    double originSexRatioMin(int p) {
+        double min = 1;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (originSexRatio[i] < min)
+                min = originSexRatio[i];
+        return min;
+    }
+
+    double originSexRatioMaxFitness(int p) {
+        double relfit, fitmax =-1, ratio = -1;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
+            relfit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+            if (relfit > fitmax) {
+                fitmax = relfit;
+                ratio = originSexRatio[i];
+            }
+        }
+        return ratio;
+    }
+
+
+    double originAsexRatioMean() {
+        double mean = 0;
+        for (int i = 0; i < totSites; i++)
+            mean += originAsexRatio[i];
+        mean /= metaPopSize();
+        return mean;
+    }
+
+    double originAsexRatioMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            mean += originAsexRatio[i];
+        mean /= popSize();
+        return mean;
+    }
+
+    double originAsexRatioMax(int p) {
+        double max = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (originAsexRatio[i] > max)
+                max = originAsexRatio[i];
+        return max;
+    }
+
+    double originAsexRatioMin(int p) {
+        double min = 1;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (originAsexRatio[i] < min)
+                min = originAsexRatio[i];
+        return min;
+    }
+
+    double originAsexRatioMaxFitness(int p) {
+        double relfit, fitmax =-1, ratio = -1;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
+            relfit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+            if (relfit > fitmax) {
+                fitmax = relfit;
+                ratio = originAsexRatio[i];
+            }
+        }
+        return ratio;
+    }
+
 
     double relFitnessMean() {
         double mean = 0;
