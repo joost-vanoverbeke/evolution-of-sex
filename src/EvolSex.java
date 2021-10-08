@@ -15,6 +15,9 @@ enum OriginType {
     IMM, F1IMM, RES, IMMSEX, RESSEX, MIXIMMSEX, MIXRESSEX
 }
 
+enum SexType {
+    FACULTATIVE, PURE
+}
 
 /* class EvolvingMetacommunity
  * loops over cycles (time steps) of reproduction and dispersal
@@ -440,6 +443,7 @@ class Sites {
         int k;
         int[] somMutLocs, sexMutLocs;
         double pSexTemp;
+        byte sex;
 
         k = Auxils.binomialSamplerSomatic.sample();
         if (k > 0) {
@@ -450,18 +454,44 @@ class Sites {
             }
         }
 
-        k = Auxils.binomialSamplerSex.sample();
-        if (k > 0) {
-            pSexTemp = Auxils.arrayMean(Auxils.arrayElements(newborns[p][posOffspring], evol.sexGenes));
-            CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.sexLoci*2, k);
-            sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
-            for (int l : sexMutLocs) {
-                if (pSexTemp <= 0.)
-                    newborns[p][posOffspring][l] += 1;
-                else if (pSexTemp >= 1.)
-                    newborns[p][posOffspring][l] -= 1;
-                else
-                    newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+// switch between facultative and pure sex/asex
+        if (Auxils.random.nextDouble() <= (evol.mutationRateSex/10.)) {
+            switch (evol.sexType) {
+                case FACULTATIVE:
+                    sex = (byte) Math.round(Auxils.arrayMean(Auxils.arrayElements(newborns[p][posOffspring], evol.sexGenes)));
+                    for (int l : evol.sexGenes) {
+                        newborns[p][posOffspring][l] = sex;
+                    }
+                    evol.sexType = SexType.PURE;
+                    break;
+                case PURE:
+                    evol.sexType = SexType.FACULTATIVE;
+                    break;
+            }
+        }
+
+        if (evol.sexType == SexType.FACULTATIVE) {
+// facultative sex
+            k = Auxils.binomialSamplerSex.sample();
+            if (k > 0) {
+                pSexTemp = Auxils.arrayMean(Auxils.arrayElements(newborns[p][posOffspring], evol.sexGenes));
+                CombinationSampler combinationSampler = new CombinationSampler(Auxils.random, evol.sexLoci * 2, k);
+                sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
+                for (int l : sexMutLocs) {
+                    if (pSexTemp <= 0.)
+                        newborns[p][posOffspring][l] += 1;
+                    else if (pSexTemp >= 1.)
+                        newborns[p][posOffspring][l] -= 1;
+                    else
+                        newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+                }
+            }
+        } else {
+// sex - asex switch
+            if (Auxils.random.nextDouble() <= (evol.mutationRateSex/10.)) {
+                for (int l : evol.sexGenes) {
+                    newborns[p][posOffspring][l] = (byte) ((newborns[p][posOffspring][l] == 0) ? 1 : 0);
+                }
             }
         }
     }
@@ -1061,6 +1091,7 @@ class Evol {
     double mutationRate = 1e-4;
     double mutationRateSex = 1e-4;
     double sigmaZ = 0.01;
+    SexType sexType = SexType.FACULTATIVE;
 
     int[] allMother;
     int[] allFather;
