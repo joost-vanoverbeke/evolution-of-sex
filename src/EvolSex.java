@@ -8,7 +8,6 @@ import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
 import org.apache.commons.rng.sampling.distribution.ZigguratNormalizedGaussianSampler;
 import org.apache.commons.rng.simple.RandomSource;
 
-import java.awt.*;
 import java.io.*;
 import java.util.Arrays;
 
@@ -85,10 +84,12 @@ public class EvolSex {
     static void logTitles(PrintWriter out) {
         out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;mu_sex;omega_e;"
 //                + "run;time;patch;N;N_res;N_f1imm;N_imm;N_ressex;N_immsex;N_mixressex;N_miximmsex;"
-                + "run;time;patch;N;"
+                + "run;time;patch;N;p_migr10;p_migr20;p_migr50;p_migr100;p_migr10-20;p_migr20-50;p_migr50-100;"
 //                + "trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;fitness_geom;load_mean;load_var;load_geom;S_mean;S_var;pSex_mean;pSex_var;"
                 + "pSex_mean;pSex_var;fitness_mean;fitness_var;load_mean;load_var;S_mean;S_var;"
-                + "origin_mean;origin_max_fitness;origin_sex_mean;origin_sex_max_fitness;origin_asex_mean;origin_asex_max_fitness");
+                + "origin_mean;origin_max_fitness;origin_sex_mean;origin_sex_max_fitness;origin_asex_mean;origin_asex_max_fitness;"
+                + "migration_generation; migration_sex; fitness_migr10; fitness_res10; fitness_migr20; fitness_res20; fitness_migr50; fitness_res50; fitness_migr100; fitness_res100;"
+                + "fitness_migr10-20; fitness_migr20-50; fitness_migr50-100");
 //                + "origin_mean;origin_min;origin_max;origin_max_fitness;"
 //                + "abs_fitness_mean;abs_fitness_max;abs_fitness_max_res;abs_fitness_max_f1imm;abs_fitness_max_imm;abs_fitness_max_ressex;abs_fitness_max_immsex;abs_fitness_max_mixressex;abs_fitness_max_miximmsex;"
 //                + "rel_fitness_max_res;rel_fitness_max_f1imm;rel_fitness_max_imm;rel_fitness_max_ressex;rel_fitness_max_immsex;rel_fitness_max_mixressex;rel_fitness_max_miximmsex");
@@ -105,20 +106,24 @@ public class EvolSex {
         for (int p = 0; p < comm.nbrPatches; p++) {
             out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f;%f",
                     comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
-            out.format(";%d;%d;%d;%d",
-                    r + 1, t, p + 1, sites.popSize());
+            out.format(";%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f",
+                    r + 1, t, p + 1, sites.popSize(), sites.pMigr(p, 10), sites.pMigr(p, 20), sites.pMigr(p, 50), sites.pMigr(p, 100), sites.pMigr(p, 10, 20), sites.pMigr(p, 20, 50), sites.pMigr(p, 50, 100));
             out.format(";"
 //                            + ";%d;%d;%d;%d;%d;%d;%d;%d;"
 //                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
                             + "%f;%f;%f;%f;%f;%f;%f;%f;"
-                            + "%f;%f;%f;%f;%f;%f",
+                            + "%f;%f;%f;%f;%f;%f;"
+                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
+                            + "%f;%f;%f",
 //                            + "%f;%f;%f;%f;"
 //                            + "%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;"
 //                            + "%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f",
 //                    sites.popSize(), sites.popSizeType(p, OriginType.RES), sites.popSizeType(p, OriginType.F1IMM), sites.popSizeType(p, OriginType.IMM), sites.popSizeType(p, OriginType.RESSEX), sites.popSizeType(p, OriginType.IMMSEX), sites.popSizeType(p, OriginType.MIXRESSEX), sites.popSizeType(p, OriginType.MIXIMMSEX),
 //                    sites.traitFitnessMean(p), sites.traitFitnessVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.relFitnessGeom(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.relLoadGeom(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p),
                     sites.pSex(p), sites.pSexVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
-                    sites.originRatioMean(p), sites.originRatioMaxFitness(p), sites.originSexRatioMean(p), sites.originSexRatioMaxFitness(p), sites.originAsexRatioMean(p),sites.originAsexRatioMaxFitness(p));
+                    sites.originRatioMean(p), sites.originRatioMaxFitness(p), sites.originSexRatioMean(p), sites.originSexRatioMaxFitness(p), sites.originAsexRatioMean(p),sites.originAsexRatioMaxFitness(p),
+                    sites.migrationGenerationMean(p), sites.migrationSexMean(p), sites.relFitnessMigrMean(p, 10), sites.relFitnessResMean(p, 10), sites.relFitnessMigrMean(p, 20), sites.relFitnessResMean(p, 20), sites.relFitnessMigrMean(p, 50), sites.relFitnessResMean(p, 50), sites.relFitnessMigrMean(p, 100), sites.relFitnessResMean(p, 100),
+                    sites.relFitnessMigrMean(p, 10, 20), sites.relFitnessMigrMean(p, 20, 50), sites.relFitnessMigrMean(p, 50, 100));
 //                    sites.originRatioMean(p),sites.originRatioMin(p),sites.originRatioMax(p),sites.originRatioMaxFitness(p),
 //                    sites.absFitnessMean(p), sites.absFitnessMax(p), sites.absFitnessMaxType(p, OriginType.RES), sites.absFitnessMaxType(p, OriginType.F1IMM), sites.absFitnessMaxType(p, OriginType.IMM), sites.absFitnessMaxType(p, OriginType.RESSEX), sites.absFitnessMaxType(p, OriginType.IMMSEX), sites.absFitnessMaxType(p, OriginType.MIXRESSEX), sites.absFitnessMaxType(p, OriginType.MIXIMMSEX),
 //                    sites.relFitnessMaxType(p, OriginType.RES), sites.relFitnessMaxType(p, OriginType.F1IMM), sites.relFitnessMaxType(p, OriginType.IMM), sites.relFitnessMaxType(p, OriginType.RESSEX), sites.relFitnessMaxType(p, OriginType.IMMSEX), sites.relFitnessMaxType(p, OriginType.MIXRESSEX), sites.relFitnessMaxType(p, OriginType.MIXIMMSEX));
@@ -152,11 +157,15 @@ class Sites {
 
     int[] patch;
     int[] origin;
+    double[] migrationGeneration;
+    double[] migrationSex;
     double[] originRatio;
     double[] originSexRatio;
     double[] originAsexRatio;
     OriginType[] type;
     int[][] newbornsOrigin;
+    double[][] newbornsMigrationGeneration;
+    double[][] newbornsMigrationSex;
     double[][] newbornsOriginRatio;
     double[][] newbornsOriginSexRatio;
     double[][] newbornsOriginAsexRatio;
@@ -194,6 +203,8 @@ class Sites {
 
         patch = new int[totSites];
         origin = new int[totSites];
+        migrationGeneration = new double[totSites];
+        migrationSex = new double[totSites];
         originRatio = new double[totSites];
         originSexRatio = new double[totSites];
         originAsexRatio = new double[totSites];
@@ -206,6 +217,8 @@ class Sites {
 
         newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
         newbornsOrigin = new int[comm.nbrPatches][comm.nbrNewborns];
+        newbornsMigrationGeneration = new double[comm.nbrPatches][comm.nbrNewborns];
+        newbornsMigrationSex = new double[comm.nbrPatches][comm.nbrNewborns];
         newbornsOriginRatio = new double[comm.nbrPatches][comm.nbrNewborns];
         newbornsOriginSexRatio = new double[comm.nbrPatches][comm.nbrNewborns];
         newbornsOriginAsexRatio = new double[comm.nbrPatches][comm.nbrNewborns];
@@ -224,6 +237,8 @@ class Sites {
         double indGtp;
         Arrays.fill(maxFitness, 0);
         Arrays.fill(originRatio, 0.);
+        Arrays.fill(migrationGeneration, 1.);
+        Arrays.fill(migrationSex, 0.);
         Arrays.fill(originSexRatio, 0.);
         Arrays.fill(originAsexRatio, 0.);
 
@@ -352,11 +367,15 @@ class Sites {
                 if (sexAdults[m]) {
                     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
                     if (patchMother != p) {
+                        newbornsMigrationGeneration[p][i] = 1.;
+                        newbornsMigrationSex[p][i] = 0.;
                         newbornsOriginRatio[p][i] = 1.;
                         newbornsOriginSexRatio[p][i] = 1.;
                         newbornsOriginAsexRatio[p][i] = 1.;
                     }
                     else {
+                        newbornsMigrationGeneration[p][i] = ((migrationGeneration[m] + migrationGeneration[f]) / 2.) + 1.;
+                        newbornsMigrationSex[p][i] = ((migrationSex[m] + migrationSex[f]) / 2.) + 1.;
 //                        newbornsOriginRatio[p][i] = (originRatio[m] + originRatio[f])/4.;
                         newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f]) / 2.) * (1 - comm.d);
                         newbornsOriginSexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2.) * (1 - comm.d);
@@ -374,11 +393,14 @@ class Sites {
                     inherit(p, i, m, f);
                 } else {
                     if (patchMother != p) {
+                        newbornsMigrationGeneration[p][i] = 1.;
+                        newbornsMigrationSex[p][i] = 0.;
                         newbornsOriginRatio[p][i] = 1.;
                         newbornsOriginSexRatio[p][i] = 1.;
                         newbornsOriginAsexRatio[p][i] = 1.;
                     }
                     else {
+                        newbornsMigrationGeneration[p][i] = migrationGeneration[m] + 1.;
 //                        newbornsOriginRatio[p][i] = originRatio[m]/2.;
                         newbornsOriginRatio[p][i] = originRatio[m] * (1 - comm.d);
                         newbornsOriginSexRatio[p][i] = originSexRatio[m] * 0.5 * (1 - comm.d);
@@ -409,6 +431,8 @@ class Sites {
         for (int i = 0; i < comm.nbrNewborns; i++) {
             pos = posOffspring[i];
             origin[pos] = newbornsOrigin[p][i];
+            migrationGeneration[pos] = newbornsMigrationGeneration[p][i];
+            migrationSex[pos] = newbornsMigrationSex[p][i];
             originRatio[pos] = newbornsOriginRatio[p][i];
             originSexRatio[pos] = newbornsOriginSexRatio[p][i];
             originAsexRatio[pos] = newbornsOriginAsexRatio[p][i];
@@ -705,6 +729,22 @@ class Sites {
         return mean;
     }
 
+    double migrationGenerationMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            mean += migrationGeneration[i];
+        mean /= popSize();
+        return mean;
+    }
+
+    double migrationSexMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            mean += migrationSex[i];
+        mean /= popSize();
+        return mean;
+    }
+
     double originRatioMax(int p) {
         double max = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -842,6 +882,66 @@ class Sites {
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             mean += (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
         mean /= popSize();
+        return mean;
+    }
+
+    double pMigr(int p, int gen) {
+        double n = 0.;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (migrationGeneration[i] <= gen) {
+                n++;
+            }
+        return n/popSize();
+    }
+
+    double pMigr(int p, int genStart, int genEnd) {
+        double n = 0.;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (migrationGeneration[i] > genStart && migrationGeneration[i] <= genEnd) {
+                n++;
+            }
+        return n/popSize();
+    }
+
+    double pRes(int p) {
+        double n = 0.;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (migrationGeneration[i] > 10) {
+                n++;
+            }
+        return n/popSize();
+    }
+
+    double relFitnessMigrMean(int p, int gen) {
+        double mean = 0, n = 0.;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (migrationGeneration[i] <= gen) {
+                mean += (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                n++;
+            }
+        mean /= n;
+        return mean;
+    }
+
+    double relFitnessMigrMean(int p, int genStart, int genEnd) {
+        double mean = 0, n = 0.;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (migrationGeneration[i] > genStart && migrationGeneration[i] <= genEnd) {
+                mean += (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                n++;
+            }
+        mean /= n;
+        return mean;
+    }
+
+    double relFitnessResMean(int p, int gen) {
+        double mean = 0, n = 0.;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (migrationGeneration[i] > gen) {
+                mean += (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                n++;
+            }
+        mean /= n;
         return mean;
     }
 
