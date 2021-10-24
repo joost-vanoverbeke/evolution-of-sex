@@ -374,12 +374,16 @@ class Sites {
                         newbornsOriginAsexRatio[p][i] = 1.;
                     }
                     else {
-                        newbornsMigrationGeneration[p][i] = ((migrationGeneration[m] + migrationGeneration[f]) / 2.) + 1.;
-                        newbornsMigrationSex[p][i] = ((migrationSex[m] + migrationSex[f]) / 2.) + 1.;
-//                        newbornsOriginRatio[p][i] = (originRatio[m] + originRatio[f])/4.;
-                        newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f]) / 2.) * (1 - comm.d);
-                        newbornsOriginSexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2.) * (1 - comm.d);
-                        newbornsOriginAsexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2. * 0.5) * (1 - comm.d);
+//                        newbornsMigrationGeneration[p][i] = ((migrationGeneration[m] + migrationGeneration[f]) / 2.) + 1.;
+//                        newbornsMigrationSex[p][i] = ((migrationSex[m] + migrationSex[f]) / 2.) + 1.;
+//                        newbornsOriginRatio[p][i] = ((originRatio[m] + originRatio[f]) / 2.) * (1 - comm.d);
+//                        newbornsOriginSexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2.) * (1 - comm.d);
+//                        newbornsOriginAsexRatio[p][i] = ((originSexRatio[m] + originSexRatio[f]) / 2. * 0.5) * (1 - comm.d);
+                        newbornsMigrationGeneration[p][i] = Math.min(migrationGeneration[m], migrationGeneration[f]) + 1.;
+                        newbornsMigrationSex[p][i] = Math.min(migrationSex[m], migrationSex[f]) + 1.;
+                        newbornsOriginRatio[p][i] = Math.max(originRatio[m], originRatio[f]) * (1. - comm.d);
+                        newbornsOriginSexRatio[p][i] = Math.max(originSexRatio[m], originSexRatio[f]) * (1. - comm.d);
+                        newbornsOriginAsexRatio[p][i] = Math.max(originSexRatio[m], originSexRatio[f]) * (1. - comm.d);
                     }
                     if (origin[m] == origin[f]) {
                         if (origin[m] == p)
@@ -401,7 +405,6 @@ class Sites {
                     }
                     else {
                         newbornsMigrationGeneration[p][i] = migrationGeneration[m] + 1.;
-//                        newbornsOriginRatio[p][i] = originRatio[m]/2.;
                         newbornsOriginRatio[p][i] = originRatio[m] * (1 - comm.d);
                         newbornsOriginSexRatio[p][i] = originSexRatio[m] * 0.5 * (1 - comm.d);
                         newbornsOriginAsexRatio[p][i] = originAsexRatio[m] * (1 - comm.d);
