@@ -77,7 +77,7 @@ public class EvolSex {
 
     static void logTitles(PrintWriter out) {
         out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;omega_e;"
-                + "run;time;patch;N;trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;fitness_geom;load_mean;load_var;load_geom;S_mean;S_var;pSex_mean;pSex_var");
+                + "run;time;patch;N;trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;abs_fitness_mean;abs_fitness_var;fitness_geom;load_mean;load_var;load_geom;S_mean;S_var;pSex_mean;pSex_var");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;genotype_min_tr%d;genotype_max_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;phenotype_min_tr%d;phenotype_max_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
                             + "genotype_meta_var_tr%d;phenotype_meta_var_tr%d",
@@ -92,7 +92,7 @@ public class EvolSex {
             out.format(";%d;%d;%d",
                     r + 1, t, p + 1);
             out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
-                    sites.popSize(), sites.traitFitnessMean(p), sites.traitFitnessVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.relFitnessGeom(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.relLoadGeom(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
+                    sites.popSize(), sites.traitFitnessMean(p), sites.traitFitnessVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.absFitnessVar(p), sites.relFitnessGeom(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.relLoadGeom(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
             for (int tr = 0; tr < comm.traits; tr++)
                 out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
                         sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotypeMean(p, tr), sites.genotypeVar(p, tr), sites.genotypeMin(p, tr), sites.genotypeMax(p, tr), sites.phenotypeMean(p, tr), sites.phenotypeVar(p, tr), sites.phenotypeMin(p, tr), sites.phenotypeMax(p, tr), sites.traitFitnessMean(p, tr), sites.traitFitnessVar(p, tr),
@@ -533,6 +533,15 @@ class Sites {
             mean += fitness[i];
         mean /= popSize();
         return mean;
+    }
+
+    double absFitnessVar(int p) {
+        double mean = absFitnessMean(p);
+        double var = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            var += Math.pow(mean - fitness[i], 2);
+        var /= popSize();
+        return var;
     }
 
     double relFitnessMean() {
