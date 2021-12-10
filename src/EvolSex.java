@@ -91,7 +91,7 @@ public class EvolSex {
                     comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.omegaE);
             out.format(";%d;%d;%d",
                     r + 1, t, p + 1);
-            out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
+            out.format(";%d;%f;%f;%f;%f;%.15f;%.15f;%f;%f;%f;%f;%f;%f;%f;%f",
                     sites.popSize(), sites.traitFitnessMean(p), sites.traitFitnessVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.absFitnessVar(p), sites.relFitnessGeom(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.relLoadGeom(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p));
             for (int tr = 0; tr < comm.traits; tr++)
                 out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f",
