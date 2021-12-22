@@ -89,7 +89,8 @@ public class EvolSex {
 //                + "trait_fitness_mean;trait_fitness_var;fitness_mean;fitness_var;fitness_geom;load_mean;load_var;load_geom;S_mean;S_var;pSex_mean;pSex_var;"
                 + "pSex_mean;pSex_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
 //                + "origin_mean;origin_max_fitness;origin_sex_mean;origin_sex_max_fitness;origin_asex_mean;origin_asex_max_fitness;"
-                + "migration_generation; migration_mother; migration_father; migration_max_fitness; migration_mother_max_fitness; migration_father_max_fitness; migration_genotype; migration_genotype_range");
+                + "migration_generation; migration_mother; migration_father; migration_max_fitness; migration_mother_max_fitness; migration_father_max_fitness; migration_genotype; migration_genotype_range;"
+                + "pSex_mothers; fitness_mothers; abs_fitness_mothers; migration_mothers;");
 //                + "origin_mean;origin_min;origin_max;origin_max_fitness;"
 //                + "abs_fitness_mean;abs_fitness_max;abs_fitness_max_res;abs_fitness_max_f1imm;abs_fitness_max_imm;abs_fitness_max_ressex;abs_fitness_max_immsex;abs_fitness_max_mixressex;abs_fitness_max_miximmsex;"
 //                + "rel_fitness_max_res;rel_fitness_max_f1imm;rel_fitness_max_imm;rel_fitness_max_ressex;rel_fitness_max_immsex;rel_fitness_max_mixressex;rel_fitness_max_miximmsex");
@@ -113,7 +114,8 @@ public class EvolSex {
 //                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
                             + "%f;%f;%f;%f;%f;%f;%f;%f;%f;"
 //                            + "%f;%f;%f;%f;%f;%f;"
-                            + "%f;%f;%f;%f;%f;%f;%f;%f",
+                            + "%f;%f;%f;%f;%f;%f;%f;%f;"
+                            + "%f;%f;%f;%f",
 //                            + "%f;%f;%f;%f;"
 //                            + "%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;"
 //                            + "%.10f;%.10f;%.10f;%.10f;%.10f;%.10f;%.10f",
@@ -121,7 +123,8 @@ public class EvolSex {
 //                    sites.traitFitnessMean(p), sites.traitFitnessVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.relFitnessGeom(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.relLoadGeom(p), sites.selectionDiff(p), sites.selectionDiffVar(p), sites.pSex(p), sites.pSexVar(p),
                     sites.pSex(p), sites.pSexVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
 //                    sites.originRatioMean(p), sites.originRatioMaxFitness(p), sites.originSexRatioMean(p), sites.originSexRatioMaxFitness(p), sites.originAsexRatioMean(p),sites.originAsexRatioMaxFitness(p),
-                    sites.migrationGenerationMean(p), sites.migrationMotherMean(p), sites.migrationFatherMean(p), sites.migrationMaxFitness(p), sites.migrationMotherMaxFitness(p), sites.migrationFatherMaxFitness(p), sites.migrationGenotypeMean(p), sites.migrationGenotypeRange(p));
+                    sites.migrationGenerationMean(p), sites.migrationMotherMean(p), sites.migrationFatherMean(p), sites.migrationMaxFitness(p), sites.migrationMotherMaxFitness(p), sites.migrationFatherMaxFitness(p), sites.migrationGenotypeMean(p), sites.migrationGenotypeRange(p),
+                    sites.pSexMothers[p], sites.fitnessRelMothers[p], sites.fitnessMothers[p], sites.migrationMothers[p]);
 //                    sites.originRatioMean(p),sites.originRatioMin(p),sites.originRatioMax(p),sites.originRatioMaxFitness(p),
 //                    sites.absFitnessMean(p), sites.absFitnessMax(p), sites.absFitnessMaxType(p, OriginType.RES), sites.absFitnessMaxType(p, OriginType.F1IMM), sites.absFitnessMaxType(p, OriginType.IMM), sites.absFitnessMaxType(p, OriginType.RESSEX), sites.absFitnessMaxType(p, OriginType.IMMSEX), sites.absFitnessMaxType(p, OriginType.MIXRESSEX), sites.absFitnessMaxType(p, OriginType.MIXIMMSEX),
 //                    sites.relFitnessMaxType(p, OriginType.RES), sites.relFitnessMaxType(p, OriginType.F1IMM), sites.relFitnessMaxType(p, OriginType.IMM), sites.relFitnessMaxType(p, OriginType.RESSEX), sites.relFitnessMaxType(p, OriginType.IMMSEX), sites.relFitnessMaxType(p, OriginType.MIXRESSEX), sites.relFitnessMaxType(p, OriginType.MIXIMMSEX));
@@ -184,6 +187,10 @@ class Sites {
 
     double[][] environment;
     double[] maxFitness;
+    double[] fitnessMothers;
+    double[] fitnessRelMothers;
+    double[] migrationMothers;
+    double[] pSexMothers;
 
     boolean[] sexAdults;
     int[] endPosFathers;
@@ -240,6 +247,10 @@ class Sites {
 
         environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
+        fitnessMothers = new double[comm.nbrPatches];
+        fitnessRelMothers = new double[comm.nbrPatches];
+        migrationMothers = new double[comm.nbrPatches];
+        pSexMothers = new double[comm.nbrPatches];
 
         sexAdults = new boolean[totSites];
         endPosFathers = new int[comm.nbrPatches];
@@ -373,8 +384,14 @@ class Sites {
 
     void reproduction(int t) {
         int[] posOffspring;
-        int m, f, patchMother;
+        int m, f, patchMother, locals;
+        Arrays.fill(fitnessMothers, 0.);
+        Arrays.fill(fitnessRelMothers, 0.);
+        Arrays.fill(migrationMothers, 0.);
+        Arrays.fill(pSexMothers, 0.);
+
         for (int p = 0; p < comm.nbrPatches; p++) {
+            locals = 0;
             //sampling parents with replacement!
             //selfing allowed!
             for (int i = 0; i < comm.nbrNewborns; i++) {
@@ -396,6 +413,12 @@ class Sites {
 //                        newbornsOriginAsexRatio[p][i] = 1.;
                     }
                     else {
+                        locals++;
+                        fitnessMothers[p] += fitness[m];
+                        fitnessRelMothers[p] += (maxFitness[p] > 0.) ? fitness[m] / maxFitness[p] : 0.;
+                        migrationMothers[p] += Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[m], evol.somGenes));
+                        pSexMothers[p] += pSex[m];
+
                         newbornsMigrationGeneration[p][i] = ((migrationGeneration[m] + migrationGeneration[f]) / 2.) + 1.;
 //                        newbornsMigrationGeneration[p][i] = ((migrationGeneration[m] + migrationGeneration[f]) / 2.);
 //                        newbornsMigrationSex[p][i] = ((migrationSex[m] + migrationSex[f]) / 2.) + 1.;
@@ -443,6 +466,12 @@ class Sites {
 //                        newbornsOriginAsexRatio[p][i] = 1.;
                     }
                     else {
+                        locals++;
+                        fitnessMothers[p] += fitness[m];
+                        fitnessRelMothers[p] += (maxFitness[p] > 0.) ? fitness[m] / maxFitness[p] : 0.;
+                        migrationMothers[p] += Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[m], evol.somGenes));
+                        pSexMothers[p] += pSex[m];
+
                         newbornsMigrationGeneration[p][i] = migrationGeneration[m] + 1.;
                         newbornsMigrationMother[p][i] = migrationGeneration[m] + 1.;
                         newbornsMigrationFather[p][i] = migrationGeneration[m] + 1.;
@@ -463,6 +492,11 @@ class Sites {
                     newbornsType[p][i] = OriginType.F1IMM;
                 mutate(p, i);
             }
+
+            fitnessMothers[p] /= locals;
+            fitnessRelMothers[p] /= locals;
+            migrationMothers[p] /= locals;
+            pSexMothers[p] /= locals;
         }
         for (int p = 0; p < comm.nbrPatches; p++) {
             posOffspring = Auxils.combinationSamplerPositionOffspring.sample();
