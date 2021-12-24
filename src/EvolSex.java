@@ -118,6 +118,7 @@ class Sites {
     int drPos;
 
     int[] patch;
+    boolean[] alive;
     double[][] traitPhenotype;
     double[][] traitFitness;
     double[] fitness;
@@ -128,6 +129,10 @@ class Sites {
 
     double[][] environment;
     double[] maxFitness;
+
+    int[][] posEmpty;
+    int[] nbrEmpty;
+    int nbrSettled;
 
     boolean[] sexAdults;
     int[] endPosFathers;
@@ -148,16 +153,20 @@ class Sites {
         totSites = comm.nbrPatches * comm.microsites;
 
         patch = new int[totSites];
+        alive = new boolean[totSites];
         traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
         genotype = new byte[totSites][2 * evol.allLoci];
         pSex = new double[totSites];
 
-        newborns = new byte[comm.nbrPatches][comm.nbrNewborns][2 * evol.allLoci];
+        newborns = new byte[comm.nbrPatches][(int) (comm.microsites*comm.d*2)][2 * evol.allLoci];
 
         environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
+
+        posEmpty = new int[comm.nbrPatches][comm.microsites];
+        nbrEmpty = new int[comm.nbrPatches];
 
         sexAdults = new boolean[totSites];
         endPosFathers = new int[comm.nbrPatches];
@@ -175,6 +184,7 @@ class Sites {
                 patch[m] = p;
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
+                alive[m] = true;
                 fitness[m] = 1;
                 for (int tr = 0; tr < comm.traits; tr++) {
                     traitFitness[m][tr] = 1;
@@ -229,15 +239,17 @@ class Sites {
     void adjustFitness(int p, int d) {
         double oldFit;
         for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
-            oldFit = fitness[m];
-            if (oldFit == 0)
-                fitness[m] = 1;
-            for (int tr = 0; tr < comm.traits; tr++) {
-                if ((oldFit != 0) && (comm.traitDim[tr] == d))
-                    fitness[m] /= traitFitness[m][tr];
-                if ((oldFit == 0) || (comm.traitDim[tr] == d)) {
-                    traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
-                    fitness[m] *= traitFitness[m][tr];
+            if (alive[m]) {
+                oldFit = fitness[m];
+                if (oldFit == 0)
+                    fitness[m] = 1;
+                for (int tr = 0; tr < comm.traits; tr++) {
+                    if ((oldFit != 0) && (comm.traitDim[tr] == d))
+                        fitness[m] /= traitFitness[m][tr];
+                    if ((oldFit == 0) || (comm.traitDim[tr] == d)) {
+                        traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
+                        fitness[m] *= traitFitness[m][tr];
+                    }
                 }
             }
         }
@@ -252,17 +264,26 @@ class Sites {
 
     void contributionAdults() {
         Arrays.fill(endPosFathers, 0);
+        Arrays.fill(nbrEmpty, 0);
         double contr;
         int p;
 
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
-            contr = (maxFitness[p] > 0.) ? fitness[i] / maxFitness[p] : 0.;
-            sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
-            if (sexAdults[i]) {
-                fathersPos[p][endPosFathers[p]] = i;
-                fathersProb[p][endPosFathers[p]++] = contr;
-                contr *= comm.demogrCost[dcPos];
+            if (alive[i]) {
+                alive[i] = Auxils.random.nextDouble() < (1 - comm.d);
+            }
+            if (alive[i]) {
+                contr = (maxFitness[p] > 0.) ? fitness[i] / maxFitness[p] : 0.;
+                sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
+                if (sexAdults[i]) {
+                    fathersPos[p][endPosFathers[p]] = i;
+                    fathersProb[p][endPosFathers[p]++] = contr;
+                    contr *= comm.demogrCost[dcPos];
+                }
+            } else {
+                contr = 0.;
+                posEmpty[p][nbrEmpty[p]++] = i;
             }
             for (int p2 = 0; p2 < comm.nbrPatches; p2++) {
                 mothersCumProb[p2][i] = contr * comm.dispNeighbours[p2][p];
@@ -284,9 +305,11 @@ class Sites {
         int[] posOffspring;
         int m, f, patchMother;
         for (int p = 0; p < comm.nbrPatches; p++) {
+            nbrSettled = nbrEmpty[p];
             //sampling parents with replacement!
             //selfing allowed!
-            for (int i = 0; i < comm.nbrNewborns; i++) {
+            posOffspring = Auxils.arraySample(nbrSettled, Arrays.copyOf(posEmpty[p], nbrEmpty[p]));
+            for (int i = 0; i < nbrSettled; i++) {
                 m = Auxils.randIntCumProb(mothersCumProb[p]);
                 patchMother = patch[m];
                 if (sexAdults[m]) {
@@ -296,20 +319,23 @@ class Sites {
                     inherit(p, i, m);
                 mutate(p, i);
             }
-        }
-        for (int p = 0; p < comm.nbrPatches; p++) {
-            posOffspring = Auxils.combinationSamplerPositionOffspring.sample();
-            Auxils.arrayAdd(posOffspring, p * comm.microsites);
             settle(p, posOffspring);
         }
+//        for (int p = 0; p < comm.nbrPatches; p++) {
+//            posOffspring = Auxils.combinationSamplerPositionOffspring.sample();
+////            combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
+//            Auxils.arrayAdd(posOffspring, p * comm.microsites);
+//            settle(p, posOffspring);
+//        }
     }
 
     /* install newborns and inherit traits from the parent(s)
      * including mutation */
     void settle(int p, int[] posOffspring) {
         int pos;
-        for (int i = 0; i < comm.nbrNewborns; i++) {
+        for (int i = 0; i < nbrSettled; i++) {
             pos = posOffspring[i];
+            alive[pos] = true;
             System.arraycopy(newborns[p][i], 0, genotype[pos], 0, 2 * evol.allLoci);
             fitness[pos] = 1;
             for (int tr = 0; tr < comm.traits; tr++) {
@@ -707,7 +733,7 @@ class Comm {
     double sigmaE = 0.0;
     int microsites = 600;
     double d = 0.1;
-    int nbrNewborns = (int) Math.round(microsites*d);
+//    int nbrNewborns = (int) Math.round(microsites*d);
     double[] demogrCost = {0.5};
 
     int gridSize = 2;
@@ -724,7 +750,7 @@ class Comm {
     double[][] dispNeighbours = new double[nbrPatches][nbrPatches];
 
     void init() {
-        nbrNewborns = (int) (microsites*d);
+//        nbrNewborns = (int) (microsites*d);
         nbrPatches = gridSize * gridSize;
         neighbours = new double[nbrPatches][nbrPatches];
         dispNeighbours = new double[nbrPatches][nbrPatches];
@@ -1003,11 +1029,11 @@ class Auxils {
 
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
-    static CombinationSampler combinationSamplerPositionOffspring;
+//    static CombinationSampler combinationSamplerPositionOffspring;
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
-        combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
+//        combinationSamplerPositionOffspring = new CombinationSampler(random, comm.microsites, comm.nbrNewborns);
     }
 
     static void arrayShuffle(int[] array) {
