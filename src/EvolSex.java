@@ -56,7 +56,8 @@ public class EvolSex {
                                 logResults(0, streamOut, r, dc, es, dr);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
-                                    sites.changeEnvironment();
+                                    if (((t + 1) % (int) (1./comm.pChange)) == 0)
+                                        sites.changeEnvironment();
                                     sites.findMaxFitness();
                                     sites.contributionAdults();
                                     sites.reproduction();
@@ -79,7 +80,7 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;demogr_cost;traits;traitLoci;sigma_z;mu;mu_sex;omega_e;"
+        out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;r;demogr_cost;traits;traitLoci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
                 + "pSex_mean;pSex_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
                 + "migration_genotype");
@@ -92,8 +93,8 @@ public class EvolSex {
 
     static void logResults(int t, PrintWriter out, int r, int dc, int es, int dr) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%d;%d;%f;%f;%f;%f",
-                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
+            out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%f;%f;%f;%f",
+                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
@@ -208,9 +209,17 @@ class Sites {
                         genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
                         migrationGenotype[m][l] = 1;
                     }
-                    for (int l : evol.sexGenes) {
-                        genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
+
+                    if (comm.sexType.equals("SWITCH")) {
+                        for (int l : evol.sexGenes) {
+                            genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
+                        }
+                    } else {
+                        for (int l : evol.sexGenes) {
+                            genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                        }
                     }
+
                     traitPhenotype[m][tr] = calcPhenotype(m, tr);
                     traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
                     fitness[m] *= traitFitness[m][tr];
@@ -231,22 +240,38 @@ class Sites {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
 
+//    void changeEnvironment() {
+//        boolean globalEnv = comm.envType.equals("REGIONAL");
+//        boolean globalChange;
+//        double globalStep = 0;
+//        double step;
+//
+//        for (int d = 0; d < comm.envDims; d++) {
+//            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
+//            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+//            for (int p = 0; p < comm.nbrPatches; p++) {
+//                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
+//                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+//                    environment[p][d] = environment[p][d] + step;
+//                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+//                    adjustFitness(p, d);
+//                }
+//            }
+//        }
+//    }
+
     void changeEnvironment() {
         boolean globalEnv = comm.envType.equals("REGIONAL");
-        boolean globalChange;
         double globalStep = 0;
         double step;
 
         for (int d = 0; d < comm.envDims; d++) {
-            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
-            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
+            globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
             for (int p = 0; p < comm.nbrPatches; p++) {
-                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
-                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
-                    environment[p][d] = environment[p][d] + step;
-                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
-                    adjustFitness(p, d);
-                }
+                step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
+                environment[p][d] = environment[p][d] + step;
+                environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+                adjustFitness(p, d);
             }
         }
     }
@@ -421,14 +446,31 @@ class Sites {
             }
         }
 
-        // sex - asex switch
-    	if (Auxils.random.nextDouble() <= evol.mutationRateSex)
-    	{
-            for (int l : evol.sexGenes)
-    		{
-                newborns[p][posOffspring][l] = (byte) ((newborns[p][posOffspring][l] == 0) ? 1 : 0);
-    		}
-    	}
+        if (comm.sexType.equals("SWITCH")) {
+            if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
+                for (int l : evol.sexGenes) {
+                    newborns[p][posOffspring][l] = (byte) ((newborns[p][posOffspring][l] == 0) ? 1 : 0);
+                }
+            }
+        } else {
+            int[] sexMutLocs;
+            double pSexTemp;
+            k = Auxils.binomialSamplerSex.sample();
+            if (k > 0) {
+                pSexTemp = Auxils.arrayMean(Auxils.arrayElements(newborns[p][posOffspring], evol.sexGenes));
+                CombinationSampler combinationSampler = new CombinationSampler(Auxils.random, evol.sexLoci * 2, k);
+                sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
+                for (int l : sexMutLocs) {
+                    if (pSexTemp <= 0.)
+                        newborns[p][posOffspring][l] += 1;
+                    else if (pSexTemp >= 1.)
+                        newborns[p][posOffspring][l] -= 1;
+                    else
+                        newborns[p][posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+                }
+            }
+        }
+
     }
 
     int metapopSize() {
@@ -839,6 +881,7 @@ class Comm {
     double[] envStep = {0.01};
     double[] dispRate = {0.01};
     double rho = 1;
+    String sexType = "SWITCH";
     double pSex = 0;
 
     int[] traitDim;
@@ -1084,11 +1127,14 @@ class Reader {
                     case "TRAITLOCI":
                         evol.traitLoci = Integer.parseInt(words[1]);
                         break;
-                    case "SEXLOCI":
-                        evol.sexLoci = Integer.parseInt(words[1]);
-                        break;
                     case "MU":
                         evol.mutationRate = Double.parseDouble(words[1]);
+                        break;
+                    case "SEXTYPE":
+                        comm.sexType = words[1];
+                        break;
+                    case "SEXLOCI":
+                        evol.sexLoci = Integer.parseInt(words[1]);
                         break;
                     case "MUSEX":
                         evol.mutationRateSex = Double.parseDouble(words[1]);
@@ -1128,9 +1174,11 @@ class Auxils {
 
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
+    static SharedStateDiscreteSampler binomialSamplerSex;
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
+        binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRateSex);
     }
 
     static void arrayShuffle(int[] array) {
