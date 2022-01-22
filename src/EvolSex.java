@@ -83,7 +83,11 @@ public class EvolSex {
         out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;r;demogr_cost;traits;traitLoci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
                 + "pSex_mean;pSex_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
-                + "migration_genotype");
+                + "migration_mean;migration_var;migration_distinct;migration_div;"
+                + "migration_fitness;fitness_migration;abs_fitness_migration;"
+                + "migration_var_fitness;fitness_migration_var;abs_fitness_migration_var;"
+                + "distinct_fitness;fitness_distinct;abs_fitness_distinct;"
+                + "div_fitness;fitness_div;abs_fitness_div");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
                             + "genotype_meta_var_tr%d;phenotype_meta_var_tr%d",
@@ -99,9 +103,17 @@ public class EvolSex {
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
                             + "%f;%f;%f;%f;%f;%f;%f;%f;%f;"
-                            + "%f",
+                            + "%f;%f;%f;%f;"
+                            + "%f;%f;%f;"
+                            + "%f;%f;%f;"
+                            + "%f;%f;%f;"
+                            + "%f;%f;%f",
                     sites.pSex(p), sites.pSexVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
-                    sites.migrationGenotypeMean(p));
+                    sites.migrationMean(p),sites.migrationVarMean(p),sites.migrationDistinctMean(p),sites.migrationDivMean(p),
+                    sites.migrationFitnessMean(p),sites.fitnessMigrationMean(p),sites.absFitnessMigrationMean(p),
+                    sites.migrationVarFitnessMean(p),sites.fitnessMigrationVarMean(p),sites.absFitnessMigrationVarMean(p),
+                    sites.distinctFitnessMean(p),sites.fitnessDistinctMean(p),sites.absFitnessDistinctMean(p),
+                    sites.divFitnessMean(p),sites.fitnessDivMean(p),sites.absFitnessDivMean(p));
             for (int tr = 0; tr < comm.traits; tr++)
                 out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f",
                         sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotypeMean(p, tr), sites.genotypeVar(p, tr), sites.phenotypeMean(p, tr), sites.phenotypeVar(p, tr), sites.traitFitnessMean(p, tr), sites.traitFitnessVar(p, tr),
@@ -315,6 +327,11 @@ class Sites {
                 alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * (fitness[i] / maxFitness[p]);
             }
             if (alive[i]) {
+
+                for (int l = 0; l < (2*evol.allLoci); l++) {
+                    migrationGenotype[i][l] += 1;
+                }
+
                 contr = 1;
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
                 if (sexAdults[i]) {
@@ -405,9 +422,9 @@ class Sites {
         System.arraycopy(genotype[posParent], 0, newborns[p][posOffspring], 0, 2 * evol.allLoci);
 
         System.arraycopy(migrationGenotype[posParent], 0, migrationNewborns[p][posOffspring], 0, 2 * evol.allLoci);
-        for (int l = 0; l < (2*evol.allLoci); l++) {
-            migrationNewborns[p][posOffspring][l] += 1;
-        }
+//        for (int l = 0; l < (2*evol.allLoci); l++) {
+//            migrationNewborns[p][posOffspring][l] += 1;
+//        }
     }
 
     /* inheritance for sexual reproduction (two parent) */
@@ -418,17 +435,21 @@ class Sites {
 
             if(Auxils.random.nextBoolean()) {
                 newborns[p][posOffspring][evol.allMother[l]] = genotype[posMother][evol.allMother[l]];
-                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allMother[l]] + 1;
+//                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allMother[l]] + 1;
+                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allMother[l]];
             } else {
                 newborns[p][posOffspring][evol.allMother[l]] = genotype[posMother][evol.allFather[l]];
-                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allFather[l]] + 1;
+//                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allFather[l]] + 1;
+                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allFather[l]];
             }
             if(Auxils.random.nextBoolean()) {
                 newborns[p][posOffspring][evol.allFather[l]] = genotype[posFather][evol.allMother[l]];
-                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allMother[l]] + 1;
+//                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allMother[l]] + 1;
+                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allMother[l]];
             } else {
                 newborns[p][posOffspring][evol.allFather[l]] = genotype[posFather][evol.allFather[l]];
-                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allFather[l]] + 1;
+//                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allFather[l]] + 1;
+                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allFather[l]];
             }
         }
     }
@@ -683,12 +704,274 @@ class Sites {
         return var;
     }
 
-    double migrationGenotypeMean(int p) {
+    double migrationMean(int p) {
         double mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
                 mean += Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
         mean /= popSize(p);
+        return mean;
+    }
+
+    double migrationVarMean(int p) {
+        double var, mean, varmean = 0;
+        double[] migr;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Arrays.stream(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)).asDoubleStream().toArray();
+                mean = Auxils.arrayMean(migr);
+                Auxils.arrayAdd(migr, -mean);
+                Auxils.arrayPow(migr, 2.);
+                var = Auxils.arraySum(migr)/(2.*evol.traitLoci);
+                varmean += var;
+            }
+        varmean /= popSize(p);
+        return varmean;
+    }
+
+    double migrationDistinctMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double migrationDivMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += Auxils.divDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double migrationFitnessMean(int p) {
+        double migr, fit, fitsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                fitsum += fit;
+                mean += migr*fit;
+            }
+        mean /= fitsum;
+        return mean;
+    }
+
+    double fitnessMigrationMean(int p) {
+        double migr, fit, migrsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                migrsum += migr;
+                mean += migr*fit;
+            }
+        mean /= migrsum;
+        return mean;
+    }
+
+    double migrationAbsFitnessMean(int p) {
+        double migr, fit, fitsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = fitness[i];
+                fitsum += fit;
+                mean += migr*fit;
+            }
+        mean /= fitsum;
+        return mean;
+    }
+
+    double absFitnessMigrationMean(int p) {
+        double migr, fit, migrsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.arrayMean(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = fitness[i];
+                migrsum += migr;
+                mean += migr*fit;
+            }
+        mean /= migrsum;
+        return mean;
+    }
+
+    double migrationVarFitnessMean(int p) {
+        double var, mean, fit, fitsum = 0, meanTot = 0;
+        double[] migr;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Arrays.stream(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)).asDoubleStream().toArray();
+                mean = Auxils.arrayMean(migr);
+                Auxils.arrayAdd(migr, -mean);
+                Auxils.arrayPow(migr, 2.);
+                var = Auxils.arraySum(migr)/(2.*evol.traitLoci);
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                fitsum += fit;
+                meanTot += var*fit;
+            }
+        meanTot /= fitsum;
+        return meanTot;
+    }
+
+    double fitnessMigrationVarMean(int p) {
+        double var, mean, fit, varsum = 0, meanTot = 0;
+        double[] migr;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Arrays.stream(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)).asDoubleStream().toArray();
+                mean = Auxils.arrayMean(migr);
+                Auxils.arrayAdd(migr, -mean);
+                Auxils.arrayPow(migr, 2.);
+                var = Auxils.arraySum(migr)/(2.*evol.traitLoci);
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                varsum += var;
+                meanTot += var*fit;
+            }
+        meanTot /= varsum;
+        return meanTot;
+    }
+
+    double migrationVarAbsFitnessMean(int p) {
+        double var, mean, fit, fitsum = 0, meanTot = 0;
+        double[] migr;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Arrays.stream(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)).asDoubleStream().toArray();
+                mean = Auxils.arrayMean(migr);
+                Auxils.arrayAdd(migr, -mean);
+                Auxils.arrayPow(migr, 2.);
+                var = Auxils.arraySum(migr)/(2.*evol.traitLoci);
+                fit = fitness[i];
+                fitsum += fit;
+                meanTot += var*fit;
+            }
+        meanTot /= fitsum;
+        return meanTot;
+    }
+
+    double absFitnessMigrationVarMean(int p) {
+        double var, mean, fit, varsum = 0, meanTot = 0;
+        double[] migr;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Arrays.stream(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)).asDoubleStream().toArray();
+                mean = Auxils.arrayMean(migr);
+                Auxils.arrayAdd(migr, -mean);
+                Auxils.arrayPow(migr, 2.);
+                var = Auxils.arraySum(migr)/(2.*evol.traitLoci);
+                fit = fitness[i];
+                varsum += var;
+                meanTot += var*fit;
+            }
+        meanTot /= varsum;
+        return meanTot;
+    }
+
+    double distinctFitnessMean(int p) {
+        double migr, fit, fitsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                fitsum += fit;
+                mean += migr*fit;
+            }
+        mean /= fitsum;
+        return mean;
+    }
+
+    double fitnessDistinctMean(int p) {
+        double migr, fit, migrsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                migrsum += migr;
+                mean += migr*fit;
+            }
+        mean /= migrsum;
+        return mean;
+    }
+
+    double distinctAbsFitnessMean(int p) {
+        double migr, fit, fitsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = fitness[i];
+                fitsum += fit;
+                mean += migr*fit;
+            }
+        mean /= fitsum;
+        return mean;
+    }
+
+    double absFitnessDistinctMean(int p) {
+        double migr, fit, migrsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = fitness[i];
+                migrsum += migr;
+                mean += migr*fit;
+            }
+        mean /= migrsum;
+        return mean;
+    }
+
+    double divFitnessMean(int p) {
+        double migr, fit, fitsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.divDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                fitsum += fit;
+                mean += migr*fit;
+            }
+        mean /= fitsum;
+        return mean;
+    }
+
+    double fitnessDivMean(int p) {
+        double migr, fit, migrsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.divDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = (maxFitness[patch[i]] == 0) ? 0 : (fitness[i] / maxFitness[patch[i]]);
+                migrsum += migr;
+                mean += migr*fit;
+            }
+        mean /= migrsum;
+        return mean;
+    }
+
+    double divAbsFitnessMean(int p) {
+        double migr, fit, fitsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.divDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = fitness[i];
+                fitsum += fit;
+                mean += migr*fit;
+            }
+        mean /= fitsum;
+        return mean;
+    }
+
+    double absFitnessDivMean(int p) {
+        double migr, fit, migrsum = 0, mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                migr = Auxils.divDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                fit = fitness[i];
+                migrsum += migr;
+                mean += migr*fit;
+            }
+        mean /= migrsum;
         return mean;
     }
 
@@ -1275,12 +1558,13 @@ class Auxils {
         return (val >= 0) ? val : (-val - 1);
     }
 
-    static int countDistinct(byte[] arr, int n) {
+    static int countDistinct(int[] arr) {
         // First sort the array so that all
         // occurrences become consecutive
         Arrays.sort(arr);
 
         // Traverse the sorted array
+        int n = arr.length;
         int res = 0;
         for (int i = 0; i < n; i++) {
 
@@ -1293,6 +1577,47 @@ class Auxils {
             res++;
         }
         return res;
+    }
+
+//    static int countDistinct2(int arr[]) {
+//        int res = 1;
+//
+//        // Pick all elements one by one
+//        for (int i = 1; i < arr.length; i++)
+//        {
+//            int j = 0;
+//            for (j = 0; j < i; j++)
+//                if (arr[i] == arr[j])
+//                    break;
+//
+//            // If not printed earlier,
+//            // then print it
+//            if (i == j)
+//                res++;
+//        }
+//        return res;
+//    }
+
+    static double divDistinct(int[] arr) {
+        // First sort the array so that all
+        // occurrences become consecutive
+        Arrays.sort(arr);
+
+        // Traverse the sorted array
+        int j, n = arr.length;
+        double res = 0.;
+        for (int i = 0; i < n; i++) {
+
+            // Move the index ahead while
+            // there are duplicates
+            j = i;
+            while (i < n - 1 &&
+                    arr[i] == arr[i + 1]) {
+                i++;
+            }
+            res += Math.pow((i+1-j)/((double) n), 2.);
+        }
+        return 1./res;
     }
 
     static int[] enumArray(int from, int to) {
@@ -1510,6 +1835,11 @@ class Auxils {
     static void arrayDiv(double[] array, double a) {
         for (int i = 0; i < array.length; i++)
             array[i] /= a;
+    }
+
+    static void arrayPow(double[] array, double a) {
+        for (int i = 0; i < array.length; i++)
+            array[i] = Math.pow(array[i], a);
     }
 
     static int[] arrayConcat(int[] first, int[] second) {
