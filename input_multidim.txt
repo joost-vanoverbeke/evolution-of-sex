@@ -19,8 +19,9 @@ GRIDSIZE            4                                        	number of patches 
 // ENVTYPE				REGIONAL
 ENVTYPE				LOCAL
 PCHANGE		        0.1											probability of environmental change along each niche dimension (default = 0.1)
-ENVSTEP		    5   0.006 0.013 0.025 0.05 0.1										    step size of environmental change (default = 0.01)
-M               1   0.0		                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
+// ENVSTEP		    5   0.006 0.013 0.025 0.05 0.1										    step size of environmental change (default = 0.01)
+ENVSTEP		    1   0.1										    step size of environmental change (default = 0.01)
+M               1   0.01		                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
 RHO                 1                                        	scaling factor determining the width of the dispersal kernel  (default = 1)
 
 evolution parameters
@@ -29,16 +30,16 @@ TRAITLOCI           160                                       	total number of d
 MU                  1e-4                                     	mutation rate (default = 1e-4)
 SEXTYPE             SWITCH
 SEXLOCI		        1                                          number of diploid loci coding the probability of sex (default = 10)
-MUSEX               1e-5                                    	mutation rate (default = 1e-4)
+MUSEX               0                                    	mutation rate (default = 1e-4)
 // SEXTYPE             FACULTATIVE
-// SEXLOCI		       10                                          number of diploid loci coding the probability of sex (default = 10)
+// SEXLOCI		        10                                          number of diploid loci coding the probability of sex (default = 10)
 // MUSEX               1e-4                                    	mutation rate (default = 1e-4)
 SIGMAZ              0.01                                     	phenotypic standard deviation (default = 0.01)
 
 
 run parameters
-RUNS                5                                        	number of replicate runs (default = 1)
-TIMESTEPS           100000                                    	number of time steps in a run (default = 10000)
-PRINTSTEPS          10000		                               	time steps between console output (default = 100)
-SAVESTEPS           5000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_K400_d5e-2_r5_o2e-1_dim16_switch_single.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+RUNS                1                                        	number of replicate runs (default = 1)
+TIMESTEPS           2000                                   	number of time steps in a run (default = 10000)
+PRINTSTEPS          500		                               	time steps between console output (default = 100)
+SAVESTEPS           2000                                 	time steps between generation of output (default = 1000)
+OUTPUT              results_test.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
