@@ -10,7 +10,10 @@ import org.apache.commons.rng.simple.RandomSource;
 
 import java.io.*;
 import java.util.Arrays;
-
+import java.util.Comparator;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 /* class EvolvingMetacommunity
  * loops over cycles (time steps) of reproduction and dispersal
@@ -38,11 +41,12 @@ public class EvolSex {
 
             for (int r = 0; r < run.runs; r++)
                 for (int dc = 0; dc < comm.demogrCost.length; dc++)
-                    for (int es = 0; es < comm.envStep.length; es++)
+                    for (int pc = 0; pc < comm.pChange.length; pc++)
+                        for (int es = 0; es < comm.envStep.length; es++)
                             for (int dr = 0; dr < comm.dispRate.length; dr++) {
 
-                                System.out.format("run = %d; type = %s; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; step = %.4f%n",
-                                        (r + 1), comm.sexType, comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.envStep[es]);
+                                System.out.format("run = %d; env = %s; sex = %s; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; pChange = %.4f; step = %.4f%n",
+                                        (r + 1), comm.envType, comm.sexType, comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.pChange[pc], comm.envStep[es]);
 
                                 comm.init();
                                 evol.init(comm);
@@ -53,10 +57,10 @@ public class EvolSex {
 
                                 System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f%n",
                                         0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
-                                logResults(0, streamOut, r, dc, es, dr);
+                                logResults(0, streamOut, r, dc, pc, es, dr);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
-                                    if (((t + 1) % (int) (1./comm.pChange)) == 0)
+                                    if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
                                         sites.changeEnvironment();
                                     sites.findMaxFitness();
                                     sites.contributionAdults();
@@ -68,7 +72,7 @@ public class EvolSex {
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                                         sites.findMaxFitness();
-                                        logResults(t+1, streamOut, r, dc, es, dr);
+                                        logResults(t+1, streamOut, r, dc, pc, es, dr);
                                     }
                                 }
                             }
@@ -80,15 +84,10 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("gridsize;patches;p_e_change;e_step;m;rho;dims;sigma_e;microsites;d;r;demogr_cost;traits;traitLoci;sexLoci;sigma_z;mu;mu_sex;omega_e;"
+        out.print("env_type;sex_type;grid_size;patches;p_e_change;e_step;min_env;max_env;m;rho;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
-                + "pSex_mean;pSex_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
-                + "migration_mean;migration_var;migration_distinct;migration_div;"
-                + "migration_max_fit;migration_var_max_fit;migration_distinct_max_fit;migration_div_max_fit;"
-                + "migration_fitness;fitness_migration;abs_fitness_migration;"
-                + "migration_var_fitness;fitness_migration_var;abs_fitness_migration_var;"
-                + "distinct_fitness;fitness_distinct;abs_fitness_distinct;"
-                + "div_fitness;fitness_div;abs_fitness_div");
+                + "p_sex_mean;p_sex_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
+                + "residence_mean;residence_distinct;residence_div");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
                             + "genotype_meta_var_tr%d;phenotype_meta_var_tr%d",
@@ -96,27 +95,17 @@ public class EvolSex {
         out.println("");
     }
 
-    static void logResults(int t, PrintWriter out, int r, int dc, int es, int dr) {
+    static void logResults(int t, PrintWriter out, int r, int dc, int pc, int es, int dr) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%d;%d;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%f;%f;%f;%f",
-                    comm.gridSize, comm.nbrPatches, comm.pChange, comm.envStep[es], comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
+            out.format("%s;%s;%d;%d;%f;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%f;%f;%f;%f",
+                    comm.envType, comm.sexType, comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
                             + "%f;%f;%f;%f;%f;%f;%f;%f;%f;"
-                            + "%f;%f;%f;%f;"
-                            + "%f;%f;%d;%f;"
-                            + "%f;%f;%f;"
-                            + "%f;%f;%f;"
-                            + "%f;%f;%f;"
                             + "%f;%f;%f",
                     sites.pSex(p), sites.pSexVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
-                    sites.migrationMean(p),sites.migrationVarMean(p),sites.migrationDistinctMean(p),sites.migrationDivMean(p),
-                    sites.migrationMaxFit(p),sites.migrationVarMaxFit(p),sites.distinctMaxFit(p),sites.divMaxFit(p),
-                    sites.migrationFitnessMean(p),sites.fitnessMigrationMean(p),sites.absFitnessMigrationMean(p),
-                    sites.migrationVarFitnessMean(p),sites.fitnessMigrationVarMean(p),sites.absFitnessMigrationVarMean(p),
-                    sites.distinctFitnessMean(p),sites.fitnessDistinctMean(p),sites.absFitnessDistinctMean(p),
-                    sites.divFitnessMean(p),sites.fitnessDivMean(p),sites.absFitnessDivMean(p));
+                    sites.residenceMean(p),sites.residenceDistinctMean(p),sites.residenceDivMean(p));
             for (int tr = 0; tr < comm.traits; tr++)
                 out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f",
                         sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotypeMean(p, tr), sites.genotypeVar(p, tr), sites.phenotypeMean(p, tr), sites.phenotypeVar(p, tr), sites.traitFitnessMean(p, tr), sites.traitFitnessVar(p, tr),
@@ -148,6 +137,7 @@ class Sites {
 
     byte[][] genotype;
     int[][] migrationGenotype;
+    int[][] migrationDistinct;
 
     double[][] environment;
     double[] maxFitness;
@@ -184,6 +174,7 @@ class Sites {
 
         genotype = new byte[totSites][2 * evol.allLoci];
         migrationGenotype = new int[totSites][2 * evol.allLoci];
+        migrationDistinct = new int[totSites][2 * evol.allLoci];
 
         pSex = new double[totSites];
 
@@ -218,6 +209,7 @@ class Sites {
                     for (int l : evol.traitGenes[tr]) {
                         genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
                         migrationGenotype[m][l] = 1;
+                        migrationDistinct[m][l] = 1;
                     }
 
                     if (comm.sexType.equals("SWITCH")) {
@@ -328,6 +320,7 @@ class Sites {
 
                 for (int l = 0; l < (2*evol.allLoci); l++) {
                     migrationGenotype[i][l] += 1;
+                    migrationDistinct[i][l] += 1;
                 }
 
                 contr = 1;
@@ -396,11 +389,28 @@ class Sites {
         settleRest(p, pos, m);
     }
 
+    int localAgeAllele(int p, int i, int a, int l) {
+        int age = 1;
+        for (int j = p * comm.microsites; j < (p + 1) * comm.microsites; j++)
+            if (alive[j] && j != i)
+                if (a == genotype[j][evol.allMother[l]]) {
+                    age = migrationDistinct[j][evol.allMother[l]];
+                    break;
+                } else if (a == genotype[j][evol.allFather[l]]) {
+                    age = migrationDistinct[j][evol.allFather[l]];
+                    break;
+                }
+        return age;
+    }
+
     void settleRest(int p, int pos, int m) {
         alive[pos] = true;
         if (patch[m] != p) {
-            for (int l = 0; l < (2*evol.allLoci); l++) {
-                migrationGenotype[pos][l] = 1;
+            for (int l = 0; l < evol.allLoci; l++) {
+                migrationGenotype[pos][evol.allMother[l]] = 1;
+                migrationGenotype[pos][evol.allFather[l]] = 1;
+                migrationDistinct[pos][evol.allMother[l]] = localAgeAllele(p, pos, genotype[pos][evol.allMother[l]], l);
+                migrationDistinct[pos][evol.allFather[l]] = localAgeAllele(p, pos, genotype[pos][evol.allFather[l]], l);
             }
         }
         fitness[pos] = 1;
@@ -447,6 +457,7 @@ class Sites {
         System.arraycopy(genotype[posParent], 0, genotype[posOffspring], 0, 2 * evol.allLoci);
 
         System.arraycopy(migrationGenotype[posParent], 0, migrationGenotype[posOffspring], 0, 2 * evol.allLoci);
+        System.arraycopy(migrationDistinct[posParent], 0, migrationDistinct[posOffspring], 0, 2 * evol.allLoci);
 //        for (int l = 0; l < (2*evol.allLoci); l++) {
 //            migrationNewborns[p][posOffspring][l] += 1;
 //        }
@@ -471,19 +482,23 @@ class Sites {
                 genotype[posOffspring][evol.allMother[l]] = genotype[posMother][evol.allMother[l]];
 //                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allMother[l]] + 1;
                 migrationGenotype[posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allMother[l]];
+                migrationDistinct[posOffspring][evol.allMother[l]] = migrationDistinct[posMother][evol.allMother[l]];
             } else {
                 genotype[posOffspring][evol.allMother[l]] = genotype[posMother][evol.allFather[l]];
 //                migrationNewborns[p][posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allFather[l]] + 1;
                 migrationGenotype[posOffspring][evol.allMother[l]] = migrationGenotype[posMother][evol.allFather[l]];
+                migrationDistinct[posOffspring][evol.allMother[l]] = migrationDistinct[posMother][evol.allFather[l]];
             }
             if(Auxils.random.nextBoolean()) {
                 genotype[posOffspring][evol.allFather[l]] = genotype[posFather][evol.allMother[l]];
 //                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allMother[l]] + 1;
                 migrationGenotype[posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allMother[l]];
+                migrationDistinct[posOffspring][evol.allFather[l]] = migrationDistinct[posFather][evol.allMother[l]];
             } else {
                 genotype[posOffspring][evol.allFather[l]] = genotype[posFather][evol.allFather[l]];
 //                migrationNewborns[p][posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allFather[l]] + 1;
                 migrationGenotype[posOffspring][evol.allFather[l]] = migrationGenotype[posFather][evol.allFather[l]];
+                migrationDistinct[posOffspring][evol.allFather[l]] = migrationDistinct[posFather][evol.allFather[l]];
             }
         }
     }
@@ -738,7 +753,7 @@ class Sites {
         return var;
     }
 
-    double migrationMean(int p) {
+    double residenceMean(int p) {
         double mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
@@ -747,7 +762,16 @@ class Sites {
         return mean;
     }
 
-    double migrationVarMean(int p) {
+    double residenceUniqueMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += Auxils.arrayMean(Auxils.arrayElements(migrationDistinct[i], evol.somGenes));
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double residenceVarMean(int p) {
         double var, mean, varmean = 0;
         double[] migr;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -763,7 +787,7 @@ class Sites {
         return varmean;
     }
 
-    double migrationDistinctMean(int p) {
+    double residenceDistinctMean(int p) {
         double mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
@@ -772,7 +796,178 @@ class Sites {
         return mean;
     }
 
-    double migrationDivMean(int p) {
+    double residenceDistinctVar(int p) {
+        double mean = residenceDistinctMean(p);
+        double var = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                var += Math.pow(mean - Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)), 2);
+        var /= popSize(p);
+        return var;
+    }
+
+    double residenceDistinctPearson(int p) {
+        PearsonsCorrelation P = new PearsonsCorrelation();
+        double[] distinct = new double[comm.microsites];
+        double[] fit = new double[comm.microsites];
+        double cor;
+        int nextInd = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                distinct[nextInd] = Math.log(Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)));
+                fit[nextInd] = fitness[i];
+                nextInd++;
+            }
+        cor = P.correlation(Arrays.copyOf(distinct, nextInd), Arrays.copyOf(fit, nextInd));
+        return cor;
+    }
+
+    double residenceDistinctPearsonCat(int p) {
+        PearsonsCorrelation P = new PearsonsCorrelation();
+        double[] distinct = new double[comm.microsites];
+        double[] fit = new double[comm.microsites];
+        int dist;
+        double cor;
+        int nextInd = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                dist = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                if (dist == 1)
+                    distinct[nextInd] = 1;
+                else if (dist == 2)
+                    distinct[nextInd] = 2;
+                else if (dist <= 5)
+                    distinct[nextInd] = 3;
+                else if (dist <= 10)
+                    distinct[nextInd] = 4;
+                else
+                    distinct[nextInd] = 5;
+                fit[nextInd] = fitness[i];
+                nextInd++;
+            }
+        cor = P.correlation(Arrays.copyOf(distinct, nextInd), Arrays.copyOf(fit, nextInd));
+        return cor;
+    }
+
+    double residenceDistinctSpearman(int p) {
+        SpearmansCorrelation P = new SpearmansCorrelation();
+        double[] distinct = new double[comm.microsites];
+        double[] fit = new double[comm.microsites];
+        double cor;
+        int nextInd = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                distinct[nextInd] = Math.log(Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes)));
+                fit[nextInd] = fitness[i];
+                nextInd++;
+            }
+        cor = P.correlation(Arrays.copyOf(distinct, nextInd), Arrays.copyOf(fit, nextInd));
+        return cor;
+    }
+
+    double residenceDistinctSpearmanCat(int p) {
+        SpearmansCorrelation P = new SpearmansCorrelation();
+        double[] distinct = new double[comm.microsites];
+        double[] fit = new double[comm.microsites];
+        int dist;
+        double cor;
+        int nextInd = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                dist = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                if (dist == 1)
+                    distinct[nextInd] = 1;
+                else if (dist == 2)
+                    distinct[nextInd] = 2;
+                else if (dist <= 5)
+                    distinct[nextInd] = 3;
+                else if (dist <= 10)
+                    distinct[nextInd] = 4;
+                else
+                    distinct[nextInd] = 5;
+                fit[nextInd] = fitness[i];
+                nextInd++;
+            }
+        cor = P.correlation(Arrays.copyOf(distinct, nextInd), Arrays.copyOf(fit, nextInd));
+        return cor;
+    }
+
+    double residenceDistinctSlope(int p) {
+        SimpleRegression R = new SimpleRegression();
+        double distinct;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                distinct = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                R.addData(Math.log(distinct), fitness[i]);
+            }
+        return R.getSlope();
+    }
+
+    double residenceDistinctSlopeCat(int p) {
+        SimpleRegression R = new SimpleRegression();
+        int dist;
+        double distinct;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                dist = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                if (dist == 1)
+                    distinct = 1;
+                else if (dist == 2)
+                    distinct = 2;
+                else if (dist <= 5)
+                    distinct = 3;
+                else if (dist <= 10)
+                    distinct = 4;
+                else
+                    distinct = 5;
+                R.addData(distinct, fitness[i]);
+            }
+        return R.getSlope();
+    }
+
+    double residenceDistinctR2(int p) {
+        SimpleRegression R = new SimpleRegression();
+        double distinct;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                distinct = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                R.addData(Math.log(distinct), fitness[i]);
+            }
+        return R.getRSquare();
+    }
+
+    double residenceDistinctR2Cat(int p) {
+        SimpleRegression R = new SimpleRegression();
+        int dist;
+        double distinct;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                dist = Auxils.countDistinct(Auxils.arrayElements(migrationGenotype[i], evol.somGenes));
+                if (dist == 1)
+                    distinct = 1;
+                else if (dist == 2)
+                    distinct = 2;
+                else if (dist <= 5)
+                    distinct = 3;
+                else if (dist <= 10)
+                    distinct = 4;
+                else
+                    distinct = 5;
+                R.addData(distinct, fitness[i]);
+            }
+        return R.getRSquare();
+    }
+
+    double distinctUniqueMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += Auxils.countDistinct(Auxils.arrayElements(migrationDistinct[i], evol.somGenes));
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double residenceDivMean(int p) {
         double mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i])
@@ -781,7 +976,16 @@ class Sites {
         return mean;
     }
 
-    double migrationMaxFit(int p) {
+    double divUniqueMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += Auxils.divDistinct(Auxils.arrayElements(migrationDistinct[i], evol.somGenes));
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double residenceMaxFit(int p) {
         double fit = 0, migr = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i]) {
@@ -793,7 +997,7 @@ class Sites {
         return migr;
     }
 
-    double migrationVarMaxFit(int p) {
+    double residenceVarMaxFit(int p) {
         double fit = 0, var = 0, mean;
         double[] migr;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -835,7 +1039,7 @@ class Sites {
         return div;
     }
 
-    double migrationFitnessMean(int p) {
+    double residenceFitnessMean(int p) {
         double migr, fit, fitsum = 0, mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i]) {
@@ -848,7 +1052,7 @@ class Sites {
         return mean;
     }
 
-    double fitnessMigrationMean(int p) {
+    double fitnessResidenceMean(int p) {
         double migr, fit, migrsum = 0, mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i]) {
@@ -861,7 +1065,7 @@ class Sites {
         return mean;
     }
 
-    double migrationAbsFitnessMean(int p) {
+    double residenceAbsFitnessMean(int p) {
         double migr, fit, fitsum = 0, mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i]) {
@@ -874,7 +1078,7 @@ class Sites {
         return mean;
     }
 
-    double absFitnessMigrationMean(int p) {
+    double absFitnessResidenceMean(int p) {
         double migr, fit, migrsum = 0, mean = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
             if (alive[i]) {
@@ -887,7 +1091,7 @@ class Sites {
         return mean;
     }
 
-    double migrationVarFitnessMean(int p) {
+    double residenceVarFitnessMean(int p) {
         double var, mean, fit, fitsum = 0, meanTot = 0;
         double[] migr;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -905,7 +1109,7 @@ class Sites {
         return meanTot;
     }
 
-    double fitnessMigrationVarMean(int p) {
+    double fitnessResidenceVarMean(int p) {
         double var, mean, fit, varsum = 0, meanTot = 0;
         double[] migr;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -923,7 +1127,7 @@ class Sites {
         return meanTot;
     }
 
-    double migrationVarAbsFitnessMean(int p) {
+    double residenceVarAbsFitnessMean(int p) {
         double var, mean, fit, fitsum = 0, meanTot = 0;
         double[] migr;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -941,7 +1145,7 @@ class Sites {
         return meanTot;
     }
 
-    double absFitnessMigrationVarMean(int p) {
+    double absFitnessResidenceVarMean(int p) {
         double var, mean, fit, varsum = 0, meanTot = 0;
         double[] migr;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
@@ -1248,7 +1452,7 @@ class Comm {
 
     int gridSize = 2;
     int nbrPatches = gridSize * gridSize;
-    double pChange = 0.1;
+    double[] pChange = {0.1};
     double[] envStep = {0.01};
     double[] dispRate = {0.01};
     double rho = 1;
@@ -1473,8 +1677,14 @@ class Reader {
                     case "ENVTYPE":
                         comm.envType = words[1];
                         break;
+//                    case "PCHANGE":
+//                        comm.pChange = Double.parseDouble(words[1]);
+//                        break;
                     case "PCHANGE":
-                        comm.pChange = Double.parseDouble(words[1]);
+                        size = Integer.parseInt(words[1]);
+                        comm.pChange = new double[size];
+                        for (int i = 0; i < size; i++)
+                            comm.pChange[i] = Double.parseDouble(words[2 + i]);
                         break;
                     case "ENVSTEP":
                         size = Integer.parseInt(words[1]);
@@ -1969,6 +2179,72 @@ class Auxils {
     static double mod(double x, int y) {
         double result = x % y;
         return result < 0 ? result + y : result;
+    }
+
+    /* Calculates Spearman's rank correlation coefficient, */
+    static Double spearman(double [] X, double [] Y) {
+        /* Error check */
+        if (X == null || Y == null || X.length != Y.length) {
+            return null;
+        }
+
+        /* Create Rank arrays */
+        int [] rankX = getRanks(X);
+        int [] rankY = getRanks(Y);
+
+        /* Apply Spearman's formula */
+        int n = X.length;
+        double numerator = 0;
+        for (int i = 0; i < n; i++) {
+            numerator += Math.pow((rankX[i] - rankY[i]), 2);
+        }
+        numerator *= 6;
+        return 1 - numerator / (n * ((n * n) - 1));
+    }
+
+    /* Returns a new array with ranks. Assumes unique array values. */
+    public static int[] getRanks(double [] array) {
+        int n = array.length;
+
+        /* Create Pair[] and sort by values */
+        Pair [] pair = new Pair[n];
+        for (int i = 0; i < n; i++) {
+            pair[i] = new Pair(i, array[i]);
+        }
+        Arrays.sort(pair, new PairValueComparator());
+
+        /* Create and return ranks[] */
+        int [] ranks = new int[n];
+        int rank = 1;
+        for (Pair p : pair) {
+            ranks[p.index] = rank++;
+        }
+        return ranks;
+    }
+
+    /* A class to store 2 variables */
+    public static class Pair {
+        public final int index;
+        public final double value;
+
+        public Pair(int i, double v) {
+            index = i;
+            value = v;
+        }
+    }
+
+    /* This lets us sort Pairs based on their value field */
+    public static class PairValueComparator implements Comparator<Pair> {
+        @Override
+        public int compare(Pair p1, Pair p2) {
+            if (p1.value < p2.value) {
+                return -1;
+            } else if (p1.value > p2.value) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
     }
 }
 
