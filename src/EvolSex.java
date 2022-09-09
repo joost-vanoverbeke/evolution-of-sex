@@ -349,6 +349,8 @@ class Sites {
                 Auxils.arrayDiv(fathersCumProb[p], fathersCumProb[p][endPosFathers[p] - 1]);
             }
         }
+//        System.out.println("      motherscumprob = ");
+//        System.out.println(Arrays.deepToString(mothersCumProb));
     }
 
     void reproduction() {
