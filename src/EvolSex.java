@@ -68,7 +68,6 @@ public class EvolSex {
                                     sites.findMaxFitness();
                                     sites.contributionAdults();
                                     sites.reproduction();
-                                    sites.disperse();
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
                                         System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f; migrCnt = %d%n",
@@ -151,9 +150,6 @@ class Sites {
     double[] production;
     int nbrSettled;
 
-    int posDisp[];
-    int nbrDisp;
-
     boolean[] sexAdults;
     int[] endPosFathers;
     int[][] fathersPos;
@@ -191,8 +187,6 @@ class Sites {
         posEmpty = new int[comm.nbrPatches][comm.microsites];
         nbrEmpty = new int[comm.nbrPatches];
         production = new double[comm.nbrPatches];
-
-        posDisp = new int[totSites];
 
         sexAdults = new boolean[totSites];
         endPosFathers = new int[comm.nbrPatches];
@@ -316,9 +310,6 @@ class Sites {
         Arrays.fill(endPosFathers, 0);
         Arrays.fill(nbrEmpty, 0);
 
-// dispersal
-        nbrDisp = 0;
-
         double contr = 0.;
         int p;
 
@@ -332,11 +323,6 @@ class Sites {
 //                for (int l = 0; l < (2*evol.allLoci); l++) {
 //                    migrationGenotype[i][l] += 1;
 //                }
-
-// dispersal
-                if(Auxils.random.nextDouble() < comm.dispRate[drPos]) {
-                    posDisp[nbrDisp++] = i;
-                }
 
                 contr = 1;
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
@@ -541,19 +527,6 @@ class Sites {
             }
         }
 
-    }
-
-    // dispersal
-    void disperse() {
-        int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
-        Auxils.arrayShuffle(dispShuffle);
-
-        for(int i = 1; i < nbrDisp; i++) {
-            int oldPos = dispShuffle[i];
-            int newPos = dispShuffle[i-1];
-            inherit(newPos, oldPos);
-            settleRest(newPos, oldPos);
-        }
     }
 
     int metapopSize() {
