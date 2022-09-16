@@ -148,19 +148,14 @@ class Sites {
 
     int[][] posEmpty;
     int[] nbrEmpty;
-//    double[] production;
     int nbrSettled;
 
     int posDisp[];
     int nbrDisp;
 
     boolean[] sexAdults;
-//    int[] endPosFathers;
-//    int[][] fathersPos;
     double[] mothersProb;
     double[] fathersProb;
-//    double[][] fathersCumProb;
-//    double[][] mothersCumProb;
 
 
     public Sites(Comm cmm, Evol evl, Init init, int dc, int es, int dr) {
@@ -191,17 +186,12 @@ class Sites {
 
         posEmpty = new int[comm.nbrPatches][comm.microsites];
         nbrEmpty = new int[comm.nbrPatches];
-//        production = new double[comm.nbrPatches];
 
         posDisp = new int[totSites];
 
         sexAdults = new boolean[totSites];
-//        endPosFathers = new int[comm.nbrPatches];
-//        fathersPos = new int[comm.nbrPatches][comm.microsites];
         mothersProb = new double[totSites];
         fathersProb = new double[totSites];
-//        fathersCumProb = new double[comm.nbrPatches][];
-//        mothersCumProb = new double[comm.nbrPatches][totSites];
 
         double indGtp;
         Arrays.fill(maxFitness, 0.);
@@ -252,26 +242,6 @@ class Sites {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
 
-//    void changeEnvironment() {
-//        boolean globalEnv = comm.envType.equals("REGIONAL");
-//        boolean globalChange;
-//        double globalStep = 0;
-//        double step;
-//
-//        for (int d = 0; d < comm.envDims; d++) {
-//            globalChange = globalEnv && (Auxils.random.nextDouble() <= comm.pChange);
-//            if (globalChange) globalStep = comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1);
-//            for (int p = 0; p < comm.nbrPatches; p++) {
-//                if (globalEnv ? globalChange : (Auxils.random.nextDouble() <= comm.pChange)) {
-//                    step = globalEnv ? globalStep : (comm.envStep[esPos] * (Auxils.random.nextBoolean() ? -1 : 1));
-//                    environment[p][d] = environment[p][d] + step;
-//                    environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
-//                    adjustFitness(p, d);
-//                }
-//            }
-//        }
-//    }
-
     void changeEnvironment() {
         boolean globalEnv = comm.envType.equals("REGIONAL");
         double globalStep = 0;
@@ -315,9 +285,7 @@ class Sites {
     }
 
     void contributionAdults() {
-//        Arrays.fill(endPosFathers, 0);
         Arrays.fill(nbrEmpty, 0);
-
 // dispersal
         nbrDisp = 0;
 
