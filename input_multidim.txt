@@ -6,7 +6,7 @@ lines not starting with an input tag (e.g. starting with '//') are ignored
 non initialized parameters receive a default value
 
 ecological parameters
-ENVDIMS		        1											number of niche dimensions (default = 1)
+ENVDIMS		        16											number of niche dimensions (default = 1)
 TRAITS		        16											number of traits (default = 2)
 MINENV              -1                                      	minimum environmental value (between 0 and 1) (default = 0.2)
 MAXENV              1                                      	maximum environmental value (between 0 and 1) (default = 0.8)
@@ -24,7 +24,7 @@ M               1   0.01		                     			    dispersal rate between pat
 RHO                 1                                        	scaling factor determining the width of the dispersal kernel  (default = 1)
 
 evolution parameters
-OMEGAE              200                                     	niche tolerance (default = 0.02)
+OMEGAE              0.2                                     	niche tolerance (default = 0.02)
 TRAITLOCI           160                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
 MU                  1e-4                                     	mutation rate (default = 1e-4)
 SEXTYPE             SWITCH
