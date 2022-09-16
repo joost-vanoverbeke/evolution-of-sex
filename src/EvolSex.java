@@ -396,13 +396,14 @@ class Sites {
         int p = patch[pos];
         alive[pos] = true;
         if (patch[m] != p) {
-            for (int l = 0; l < evol.allLoci; l++) {
-//                migrationGenotype[pos][evol.allMother[l]] = 1;
-//                migrationGenotype[pos][evol.allFather[l]] = 1;
-                migrationGenotype[pos][evol.allMother[l]] = migrationCounter;
-                migrationGenotype[pos][evol.allFather[l]] = migrationCounter;
-            }
-            migrationCounter++;
+            newMigrant(pos);
+//            for (int l = 0; l < evol.allLoci; l++) {
+////                migrationGenotype[pos][evol.allMother[l]] = 1;
+////                migrationGenotype[pos][evol.allFather[l]] = 1;
+//                migrationGenotype[pos][evol.allMother[l]] = migrationCounter;
+//                migrationGenotype[pos][evol.allFather[l]] = migrationCounter;
+//            }
+//            migrationCounter++;
         }
         fitness[pos] = 1;
         for (int tr = 0; tr < comm.traits; tr++) {
@@ -527,6 +528,11 @@ class Sites {
             }
         }
 
+    }
+
+    void newMigrant(int pos) {
+        Arrays.fill(migrationGenotype[pos], migrationCounter);
+        migrationCounter++;
     }
 
     int metapopSize() {
