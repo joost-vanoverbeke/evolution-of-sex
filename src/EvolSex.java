@@ -59,7 +59,7 @@ public class EvolSex {
                                 sites = new Sites(comm, evol, init, dc, es, dr);
 
                                 System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f; migrCnt = %d%n",
-                                        0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.migrationCounter);
+                                        0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.migrationCounter[0]);
                                 logResults(0, streamOut, r, dc, pc, es, dr);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
@@ -72,7 +72,8 @@ public class EvolSex {
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
                                         System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f; migrCnt = %d%n",
-                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.migrationCounter);
+                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.migrationCounter[0]);
+                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                                         sites.findMaxFitness();
@@ -141,7 +142,7 @@ class Sites {
 
     byte[][] genotype;
     int[][] migrationGenotype;
-    int migrationCounter;
+    int[] migrationCounter;
 
     double[][] environment;
     double[] maxFitness;
@@ -177,7 +178,8 @@ class Sites {
 
         genotype = new byte[totSites][2 * evol.allLoci];
         migrationGenotype = new int[totSites][2 * evol.allLoci];
-        migrationCounter = 2;
+        migrationCounter = new int[comm.nbrPatches];
+        Arrays.fill(migrationCounter, 2);
 
         pSex = new double[totSites];
 
@@ -468,8 +470,9 @@ class Sites {
     }
 
     void newMigrant(int pos) {
-        Arrays.fill(migrationGenotype[pos], migrationCounter);
-        migrationCounter++;
+        int p = patch[pos];
+        Arrays.fill(migrationGenotype[pos], migrationCounter[p]);
+        migrationCounter[p]++;
     }
 
 

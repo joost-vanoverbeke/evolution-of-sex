@@ -41,4 +41,4 @@ RUNS                1                                        	number of replicat
 TIMESTEPS           10000                                   	number of time steps in a run (default = 10000)
 PRINTSTEPS          1000		                               	time steps between console output (default = 100)
 SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_test_ad.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+OUTPUT              results_test_ad_m0.01.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
