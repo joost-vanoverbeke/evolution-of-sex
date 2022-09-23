@@ -58,8 +58,8 @@ public class EvolSex {
 
                                 sites = new Sites(comm, evol, init, dc, es, dr);
 
-                                System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f; migrCnt = %d%n",
-                                        0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.migrationCounter[0]);
+                                System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; migrCnt = %.0f%n",
+                                        0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), Auxils.arrayMean(sites.migrationCounter));
                                 logResults(0, streamOut, r, dc, pc, es, dr);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
@@ -71,9 +71,9 @@ public class EvolSex {
                                     sites.disperse();
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
-                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %f; relFit = %f; pSex = %f; migrCnt = %d%n",
-                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.migrationCounter[0]);
-                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
+                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; migrCnt = %.0f%n",
+                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), Auxils.arrayMean(sites.migrationCounter));
+//                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                                         sites.findMaxFitness();
@@ -179,7 +179,7 @@ class Sites {
         genotype = new byte[totSites][2 * evol.allLoci];
         migrationGenotype = new int[totSites][2 * evol.allLoci];
         migrationCounter = new int[comm.nbrPatches];
-        Arrays.fill(migrationCounter, 2);
+        Arrays.fill(migrationCounter, 1);
 
         pSex = new double[totSites];
 
@@ -211,7 +211,7 @@ class Sites {
                     indGtp = init.genotype[p][tr];
                     for (int l : evol.traitGenes[tr]) {
                         genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
-                        migrationGenotype[m][l] = 1;
+                        migrationGenotype[m][l] = 0;
                     }
 
                     if (comm.sexType.equals("SWITCH")) {
@@ -337,12 +337,18 @@ class Sites {
             posOffspring = Auxils.arraySample(nbrSettled, Arrays.copyOf(posEmpty[p], nbrEmpty[p]));
             //sampling parents with replacement!
             //selfing allowed!
+            Auxils.arrayDiv(mothersCumProb, mothersCumProb[comm.microsites-1]);
+            fathersCumProb = Arrays.copyOfRange(fathersProb, (p * comm.microsites), ((p + 1) * comm.microsites));
+            Auxils.arrayCumSum(fathersCumProb);
+            Auxils.arrayDiv(fathersCumProb, fathersCumProb[comm.microsites-1]);
             for (int i = 0; i < nbrSettled; i++) {
-                m = p * Auxils.randIntCumProb(mothersCumProb);
+                m = (p * comm.microsites) + Auxils.randIntCumProb(mothersCumProb);
+//                System.out.println("     patch = " + p);
+//                System.out.println("     patch offspring = " + patch[posOffspring[i]] + "; pos offspring = " + posOffspring[i] + "; alive offspring = " + alive[posOffspring[i]]);
+//                System.out.println("     patch mother    = " + patch[m] + "; pos mother    = " + m + "; alive mother    = " + alive[m]);
                 if (sexAdults[m]) {
-                    fathersCumProb = Arrays.copyOfRange(fathersProb, (p * comm.microsites), ((p + 1) * comm.microsites));
-                    Auxils.arrayCumSum(fathersCumProb);
-                    f = p * Auxils.randIntCumProb(fathersCumProb);
+                    f = (p * comm.microsites) + Auxils.randIntCumProb(fathersCumProb);
+//                    System.out.println("     patch father    = " + patch[f] + "; pos father    = " + f + "; alive father    = " + alive[f]);
                     settle(posOffspring[i], m, f);
                 } else {
                     settle(posOffspring[i], m);
@@ -447,26 +453,30 @@ class Sites {
 
     // dispersal
     void disperse() {
-        int oldPos, newPos;
-        int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
-        Auxils.arrayShuffle(dispShuffle);
-        byte[] tempGen = Arrays.copyOf(genotype[dispShuffle[0]], 2 * evol.allLoci);
-        for(int i = 1; i < nbrDisp; i++) {
-            oldPos = dispShuffle[i];
-            newPos = dispShuffle[i-1];
-            if(alive[oldPos]) {
-                System.arraycopy(genotype[oldPos], 0, genotype[newPos], 0, 2 * evol.allLoci);
-                newMigrant(newPos);
-                settleRest(newPos);
+        if(nbrDisp > 0) {
+            int oldPos, newPos;
+            int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
+            Auxils.arrayShuffle(dispShuffle);
+            byte[] tempGen = Arrays.copyOf(genotype[dispShuffle[0]], 2 * evol.allLoci);
+            for (int i = 1; i < nbrDisp; i++) {
+                oldPos = dispShuffle[i];
+                newPos = dispShuffle[i - 1];
+//                System.out.println("     disp: ");
+//                System.out.println("     old patch = " + patch[oldPos] + "; old pos = " + oldPos);
+//                System.out.println("     new patch = " + patch[newPos] + "; new pos = " + newPos);
+                if (alive[oldPos]) {
+                    System.arraycopy(genotype[oldPos], 0, genotype[newPos], 0, 2 * evol.allLoci);
+                    newMigrant(newPos);
+                    settleRest(newPos);
+                } else {
+                    alive[newPos] = false;
+                }
             }
-            else {
-                alive[newPos] = false;
-            }
+            newPos = dispShuffle[nbrDisp - 1];
+            System.arraycopy(tempGen, 0, genotype[newPos], 0, 2 * evol.allLoci);
+            newMigrant(newPos);
+            settleRest(newPos);
         }
-        newPos = dispShuffle[nbrDisp-1];
-        System.arraycopy(tempGen, 0, genotype[newPos], 0, 2 * evol.allLoci);
-        newMigrant(newPos);
-        settleRest(newPos);
     }
 
     void newMigrant(int pos) {
