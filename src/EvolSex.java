@@ -370,8 +370,12 @@ class Sites {
             for (int i = 0; i < nbrSettled; i++) {
                 m = Auxils.randIntCumProb(mothersCumProb[p]);
                 patchMother = patch[m];
+//                System.out.println("     patch = " + p);
+//                System.out.println("     patch offspring = " + patch[posOffspring[i]] + "; pos offspring = " + posOffspring[i] + "; alive offspring = " + alive[posOffspring[i]]);
+//                System.out.println("     patch mother    = " + patch[m] + "; pos mother    = " + m + "; alive mother    = " + alive[m]);
                 if (sexAdults[m]) {
                     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
+//                    System.out.println("     patch father    = " + patch[f] + "; pos father    = " + f + "; alive father    = " + alive[f]);
                     settle(posOffspring[i], m, f);
                 } else {
                     settle(posOffspring[i], m);
