@@ -306,18 +306,19 @@ class Sites {
                 alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * (fitness[i] / maxFitness[p]);
             }
             if (alive[i]) {
-                contr = 1.;
-                fathersProb[i] = contr;
+//                contr = 1.;
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
                 if (sexAdults[i]) {
-                    contr *= comm.demogrCost[dcPos];
+                    mothersProb[i] = comm.demogrCost[dcPos];
+                    fathersProb[i] = 1.;
+                } else {
+                    mothersProb[i] = 1.;
+                    fathersProb[i] = 0.;
                 }
-                mothersProb[i] = contr;
             } else {
-                contr = 0.;
                 posEmpty[p][nbrEmpty[p]++] = i;
-                fathersProb[i] = contr;
-                mothersProb[i] = contr;
+                mothersProb[i] = 0;
+                fathersProb[i] = 0;
             }
         }
     }
@@ -345,10 +346,10 @@ class Sites {
                 m = (p * comm.microsites) + Auxils.randIntCumProb(mothersCumProb);
 //                System.out.println("     patch = " + p);
 //                System.out.println("     patch offspring = " + patch[posOffspring[i]] + "; pos offspring = " + posOffspring[i] + "; alive offspring = " + alive[posOffspring[i]]);
-//                System.out.println("     patch mother    = " + patch[m] + "; pos mother    = " + m + "; alive mother    = " + alive[m]);
+//                System.out.println("     patch mother    = " + patch[m] + "; pos mother    = " + m + "; alive mother    = " + alive[m] + "; sex mother = " + sexAdults[m] + "; contr mother = " + mothersProb[m]);
                 if (sexAdults[m]) {
                     f = (p * comm.microsites) + Auxils.randIntCumProb(fathersCumProb);
-//                    System.out.println("     patch father    = " + patch[f] + "; pos father    = " + f + "; alive father    = " + alive[f]);
+//                    System.out.println("     patch father    = " + patch[f] + "; pos father    = " + f + "; alive father    = " + alive[f] + "; sex father = " + sexAdults[f] + "; contr father = " + fathersProb[f]);
                     settle(posOffspring[i], m, f);
                 } else {
                     settle(posOffspring[i], m);
