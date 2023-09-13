@@ -6,14 +6,15 @@ import org.apache.commons.rng.sampling.distribution.MarsagliaTsangWangDiscreteSa
 import org.apache.commons.rng.sampling.distribution.NormalizedGaussianSampler;
 import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
 import org.apache.commons.rng.sampling.distribution.ZigguratNormalizedGaussianSampler;
+import org.apache.commons.rng.sampling.distribution.PoissonSampler;
 import org.apache.commons.rng.simple.RandomSource;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+// import org.apache.commons.math3.stat.regression.SimpleRegression;
+// import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+// import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 /* class EvolvingMetacommunity
  * loops over cycles (time steps) of reproduction and dispersal
@@ -516,20 +517,30 @@ class Sites {
                 }
             }
         } else {
-            int[] sexMutLocs;
+            int[] sexMutLocs, sexMutSize;
             double pSexTemp;
             k = Auxils.binomialSamplerSex.sample();
             if (k > 0) {
                 pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
                 CombinationSampler combinationSampler = new CombinationSampler(Auxils.random, evol.sexLoci * 2, k);
                 sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
-                for (int l : sexMutLocs) {
+                sexMutSize = Auxils.poissonSamplerSex.samples(k).toArray();
+                Auxils.arrayAdd(sexMutSize, 1);
+                // for (int l : sexMutLocs) {
+                //     if (pSexTemp <= 0.)
+                //         genotype[posOffspring][l] += 1;
+                //     else if (pSexTemp >= 1.)
+                //         genotype[posOffspring][l] -= 1;
+                //     else
+                //         genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+                // }
+                for (int i = 0; i < k; i++) {
                     if (pSexTemp <= 0.)
-                        genotype[posOffspring][l] += 1;
+                        genotype[posOffspring][sexMutLocs[i]] += sexMutSize[i];
                     else if (pSexTemp >= 1.)
-                        genotype[posOffspring][l] -= 1;
+                        genotype[posOffspring][sexMutLocs[i]] -= sexMutSize[i];
                     else
-                        genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+                        genotype[posOffspring][sexMutLocs[i]] += (Auxils.random.nextBoolean() ? -sexMutSize[i] : sexMutSize[i]);
                 }
             }
         }
@@ -1282,15 +1293,24 @@ class Auxils {
 //    static UniformRandomProvider random = RandomSource.create(RandomSource.MT_64);
 //    static UniformRandomProvider random = RandomSource.create(RandomSource.JSF_64);
 //    static UniformRandomProvider random = RandomSource.create(RandomSource.MSWS);
-    static UniformRandomProvider random = RandomSource.create(RandomSource.XO_RO_SHI_RO_128_PP);
+    static UniformRandomProvider random = RandomSource.XO_RO_SHI_RO_128_PP.create();
 
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
     static SharedStateDiscreteSampler binomialSamplerSex;
+    static SharedStateDiscreteSampler poissonSamplerSex;
+    
+    // double mean = 15.5;
+    // int streamSize = 100;
+    // int[] counts = PoissonSampler.of(RandomSource.L64_X128_MIX.create(), mean)
+    //                              .samples(streamSize)
+    //                              .toArray();
+
 
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
         binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRateSex);
+        poissonSamplerSex = PoissonSampler.of(random, 2);
     }
 
     static void arrayShuffle(int[] array) {
