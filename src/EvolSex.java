@@ -231,10 +231,10 @@ class Sites {
                     traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
                     fitness[m] *= traitFitness[m][tr];
                 }
+                pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.sexGenes))));
+                // fitness[m] *= 0.9 + Math.pow(0.5-pSex[m], 2)/0.25*0.1;
                 if (maxFitness[p] < fitness[m])
                     maxFitness[p] = fitness[m];
-
-                pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.sexGenes))));
             }
         }
     }
@@ -418,10 +418,12 @@ class Sites {
             traitFitness[pos][tr] = calcFitness(traitPhenotype[pos][tr], environment[p][comm.traitDim[tr]]);
             fitness[pos] *= traitFitness[pos][tr];
         }
+        pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
+        // fitness[pos] *= 0.9 + Math.pow(0.5-pSex[pos], 2)/0.25*0.1;
+        // fitness[pos] *= 1-Math.exp(-(Math.pow(0.5-pSex[pos], 2)+0.1)/0.05);
         if (maxFitness[p] < fitness[pos])
             maxFitness[p] = fitness[pos];
-        pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
-    }
+   }
 
 
 //    void settle(int p, int[] posOffspring, int[] patchOrigin) {
@@ -499,15 +501,20 @@ class Sites {
 
     void mutate(int posOffspring) {
         int k;
-        int[] somMutLocs;
+        int[] somMutLocs, somMutSize;
 
         k = Auxils.binomialSamplerSomatic.sample();
         if (k > 0) {
             CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.traitLoci*2, k);
             somMutLocs = Auxils.arrayElements(evol.somGenes, combinationSampler.sample());
+            somMutSize = Auxils.poissonSamplerSex.samples(k).toArray();
+            Auxils.arrayAdd(somMutSize, 1);
             for (int l : somMutLocs) {
                 genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
             }
+            // for (int i = 0; i < k; i++) {
+            //     genotype[posOffspring][somMutLocs[i]] += (Auxils.random.nextBoolean() ? -somMutSize[i] : somMutSize[i]);
+            // }
         }
 
         if (comm.sexType.equals("SWITCH")) {
@@ -1310,7 +1317,7 @@ class Auxils {
     static void init(Comm comm, Evol evol) {
         binomialSamplerSomatic = Binomial.of(random, evol.traitLoci*2, evol.mutationRate);
         binomialSamplerSex = Binomial.of(random, evol.sexLoci*2, evol.mutationRateSex);
-        poissonSamplerSex = PoissonSampler.of(random, 2);
+        poissonSamplerSex = PoissonSampler.of(random, 3);
     }
 
     static void arrayShuffle(int[] array) {
