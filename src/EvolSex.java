@@ -140,7 +140,8 @@ class Sites {
     double[] fitness;
     double[] pSex;
 
-    byte[][] genotype;
+    // byte[][] genotype;
+    double[][] genotype;
     int[][] migrationGenotype;
     int[] migrationCounter;
 
@@ -177,7 +178,8 @@ class Sites {
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
 
-        genotype = new byte[totSites][2 * evol.allLoci];
+        // genotype = new byte[totSites][2 * evol.allLoci];
+        genotype = new double[totSites][2 * evol.allLoci];
         migrationGenotype = new int[totSites][2 * evol.allLoci];
         migrationCounter = new int[comm.nbrPatches];
         Arrays.fill(migrationCounter, 1);
@@ -501,20 +503,26 @@ class Sites {
 
     void mutate(int posOffspring) {
         int k;
-        int[] somMutLocs, somMutSize;
+        int[] somMutLocs;
+        double[] somMutSize;
 
         k = Auxils.binomialSamplerSomatic.sample();
         if (k > 0) {
             CombinationSampler combinationSampler = new CombinationSampler(Auxils.random,evol.traitLoci*2, k);
             somMutLocs = Auxils.arrayElements(evol.somGenes, combinationSampler.sample());
-            somMutSize = Auxils.poissonSamplerSex.samples(k).toArray();
-            Auxils.arrayAdd(somMutSize, 1);
-            for (int l : somMutLocs) {
-                genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
-            }
+            // somMutSize = Auxils.poissonSamplerSex.samples(k).toArray();
+            // Auxils.arrayAdd(somMutSize, 1);
+            somMutSize = Auxils.gaussianSampler.samples(k).toArray();
+            Auxils.arrayMult(somMutSize, 0.5);
+            // for (int l : somMutLocs) {
+            //     genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+            // }
             // for (int i = 0; i < k; i++) {
             //     genotype[posOffspring][somMutLocs[i]] += (Auxils.random.nextBoolean() ? -somMutSize[i] : somMutSize[i]);
             // }
+            for (int i = 0; i < k; i++) {
+                genotype[posOffspring][somMutLocs[i]] += somMutSize[i];
+            }
         }
 
         if (comm.sexType.equals("SWITCH")) {
@@ -524,15 +532,18 @@ class Sites {
                 }
             }
         } else {
-            int[] sexMutLocs, sexMutSize;
+            int[] sexMutLocs;
+            double[] sexMutSize;
             double pSexTemp;
             k = Auxils.binomialSamplerSex.sample();
             if (k > 0) {
                 pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
                 CombinationSampler combinationSampler = new CombinationSampler(Auxils.random, evol.sexLoci * 2, k);
                 sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
-                sexMutSize = Auxils.poissonSamplerSex.samples(k).toArray();
-                Auxils.arrayAdd(sexMutSize, 1);
+                // sexMutSize = Auxils.poissonSamplerSex.samples(k).toArray();
+                // Auxils.arrayAdd(sexMutSize, 1);
+                sexMutSize = Auxils.gaussianSampler.samples(k).toArray();
+                Auxils.arrayMult(sexMutSize, 1);
                 // for (int l : sexMutLocs) {
                 //     if (pSexTemp <= 0.)
                 //         genotype[posOffspring][l] += 1;
@@ -541,17 +552,24 @@ class Sites {
                 //     else
                 //         genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
                 // }
+                // for (int i = 0; i < k; i++) {
+                //     if (pSexTemp <= 0.)
+                //         genotype[posOffspring][sexMutLocs[i]] += sexMutSize[i];
+                //     else if (pSexTemp >= 1.)
+                //         genotype[posOffspring][sexMutLocs[i]] -= sexMutSize[i];
+                //     else
+                //         genotype[posOffspring][sexMutLocs[i]] += (Auxils.random.nextBoolean() ? -sexMutSize[i] : sexMutSize[i]);
+                // }
                 for (int i = 0; i < k; i++) {
                     if (pSexTemp <= 0.)
-                        genotype[posOffspring][sexMutLocs[i]] += sexMutSize[i];
+                        genotype[posOffspring][sexMutLocs[i]] += Math.abs(sexMutSize[i]);
                     else if (pSexTemp >= 1.)
-                        genotype[posOffspring][sexMutLocs[i]] -= sexMutSize[i];
+                        genotype[posOffspring][sexMutLocs[i]] -= Math.abs(sexMutSize[i]);
                     else
-                        genotype[posOffspring][sexMutLocs[i]] += (Auxils.random.nextBoolean() ? -sexMutSize[i] : sexMutSize[i]);
+                        genotype[posOffspring][sexMutLocs[i]] += sexMutSize[i];
                 }
             }
         }
-
     }
 
     void newMigrant(int pos) {
