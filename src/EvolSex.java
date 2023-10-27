@@ -11,9 +11,9 @@ import org.apache.commons.rng.simple.RandomSource;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+// import org.apache.commons.math3.stat.regression.SimpleRegression;
+// import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+// import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 /* class EvolvingMetacommunity
  * loops over cycles (time steps) of reproduction and dispersal
@@ -232,7 +232,6 @@ class Sites {
                 }
                 if (maxFitness[p] < fitness[m])
                     maxFitness[p] = fitness[m];
-
                 pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.sexGenes))));
             }
         }
@@ -524,12 +523,18 @@ class Sites {
                 CombinationSampler combinationSampler = new CombinationSampler(Auxils.random, evol.sexLoci * 2, k);
                 sexMutLocs = Auxils.arrayElements(evol.sexGenes, combinationSampler.sample());
                 for (int l : sexMutLocs) {
-                    if (pSexTemp <= 0.)
+                    if (pSexTemp <= 0.) {
                         genotype[posOffspring][l] += 1;
-                    else if (pSexTemp >= 1.)
+                        pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
+                    }
+                    else if (pSexTemp >= 1.) {
                         genotype[posOffspring][l] -= 1;
-                    else
+                        pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
+                    }
+                    else {
                         genotype[posOffspring][l] += (Auxils.random.nextBoolean() ? -1 : 1);
+                        pSexTemp = Auxils.arrayMean(Auxils.arrayElements(genotype[posOffspring], evol.sexGenes));
+                    }
                 }
             }
         }
@@ -1282,7 +1287,7 @@ class Auxils {
 //    static UniformRandomProvider random = RandomSource.create(RandomSource.MT_64);
 //    static UniformRandomProvider random = RandomSource.create(RandomSource.JSF_64);
 //    static UniformRandomProvider random = RandomSource.create(RandomSource.MSWS);
-    static UniformRandomProvider random = RandomSource.create(RandomSource.XO_RO_SHI_RO_128_PP);
+    static UniformRandomProvider random = RandomSource.XO_RO_SHI_RO_128_PP.create();
 
     static NormalizedGaussianSampler gaussianSampler = ZigguratNormalizedGaussianSampler.of(random);
     static SharedStateDiscreteSampler binomialSamplerSomatic;
