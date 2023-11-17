@@ -317,7 +317,10 @@ class Sites {
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
             if (alive[i]) {
+// soft selection
                 alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * (fitness[i] / maxFitness[p]);
+// hard selection
+                // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fitness[i];
             }
             if (alive[i]) {
 
