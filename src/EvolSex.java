@@ -221,8 +221,15 @@ class Sites {
                             genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
                         }
                     } else {
-                        for (int l : evol.sexGenes) {
-                            genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                        // for (int l : evol.sexGenes) {
+                        //     genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                        // }
+                        for (int l = 0; l < evol.sexLoci; l++) {
+                            if (l < Math.round(init.pSex*evol.sexLoci)) {
+                                genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 1;
+                            } else {
+                                genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 0;
+                            }
                         }
                     }
 
