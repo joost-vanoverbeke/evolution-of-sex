@@ -8,10 +8,10 @@
 *.ctxt
 
 # input files
-*.txt
+input*.txt
 
 # result files
-*.csv
+results*.csv
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
