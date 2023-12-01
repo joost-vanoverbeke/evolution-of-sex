@@ -8,6 +8,9 @@
 *.ctxt
 
 # input files
+*.txt
+
+# result files
 *.csv
 
 # Mobile Tools for Java (J2ME)
