@@ -311,16 +311,32 @@ class Sites {
         Arrays.fill(endPosFathers, 0);
         Arrays.fill(nbrEmpty, 0);
 
-        double contr = 0.;
+        double contr = 0., fit = 0., surv = 0.;
         int p;
+        int[] popS = new int[comm.nbrPatches];
+        for (p = 0; p < comm.nbrPatches; p++) {
+            popS[p] = popSize(p);
+        }
+
 
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
             if (alive[i]) {
 // soft selection
-                alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * (fitness[i] / maxFitness[p]);
+                fit = (fitness[i] / maxFitness[p]);
 // hard selection
-                // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fitness[i];
+                // fit = fitness[i];
+// regular selection
+                alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fit;
+// density dependent selection
+                // surv = Math.max(1 - (popS[p] - fit*popS[p])/(1*comm.microsites), 0);
+                // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * surv;
+// K dependent selection
+                // surv = Math.max(1 - popS[p]/(fit*2*comm.microsites), 0);
+                // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * surv;
+// dens2 selection
+                // surv = Math.max(fit*(1 - popS[p]/(comm.microsites*2)), 0);
+                // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * surv;
             }
             if (alive[i]) {
 
@@ -368,17 +384,21 @@ class Sites {
             nbrSettled = Math.min(nbrEmpty[p], (int) prod);
             posOffspring = Auxils.arraySample(nbrSettled, Arrays.copyOf(posEmpty[p], nbrEmpty[p]));
             //sampling parents with replacement!
-            //selfing allowed!
             for (int i = 0; i < nbrSettled; i++) {
                 m = Auxils.randIntCumProb(mothersCumProb[p]);
                 patchMother = patch[m];
-//                System.out.println("     patch = " + p);
-//                System.out.println("     patch offspring = " + patch[posOffspring[i]] + "; pos offspring = " + posOffspring[i] + "; alive offspring = " + alive[posOffspring[i]]);
-//                System.out.println("     patch mother    = " + patch[m] + "; pos mother    = " + m + "; alive mother    = " + alive[m]);
                 if (sexAdults[m]) {
+                    //selfing allowed!
                     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
-//                    System.out.println("     patch father    = " + patch[f] + "; pos father    = " + f + "; alive father    = " + alive[f]);
                     settle(posOffspring[i], m, f);
+                    //selfing not allowed!
+                    // if(endPosFathers[patchMother] > 1) {
+                    //     f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
+                    //     while (f == m) {
+                    //         f = fathersPos[patchMother][Auxils.randIntCumProb(fathersCumProb[patchMother])];
+                    //     }
+                    //     settle(posOffspring[i], m, f);
+                    // }
                 } else {
                     settle(posOffspring[i], m);
                 }
@@ -1093,7 +1113,7 @@ class Evol {
                 longPos = l + (tr * lociPerTrait);
                 traitMother[tr][l] = longPos;
                 traitFather[tr][l] = traitMother[tr][l] + allLoci;
-                somMother[longPos] = traitMother[tr][l];
+                somMother[longPos] = longPos;
                 somFather[longPos] = somMother[longPos] + allLoci;
             }
             traitGenes[tr] = Auxils.arrayConcat(traitMother[tr], traitFather[tr]);

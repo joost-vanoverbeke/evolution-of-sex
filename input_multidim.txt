@@ -6,10 +6,10 @@ lines not starting with an input tag (e.g. starting with '//') are ignored
 non initialized parameters receive a default value
 
 ecological parameters
-ENVDIMS		        16											number of niche dimensions (default = 1)
+ENVDIMS		        1											number of niche dimensions (default = 1)
 TRAITS		        16											number of traits (default = 2)
-MINENV              -1                                      	minimum environmental value (between 0 and 1) (default = 0.2)
-MAXENV              1                                      	maximum environmental value (between 0 and 1) (default = 0.8)
+MINENV              -5                                      	minimum environmental value (between 0 and 1) (default = 0.2)
+MAXENV              5                                      	maximum environmental value (between 0 and 1) (default = 0.8)
 MICROSITES          400    										number of microsites in each patch (default = 600)
 D                   0.05                                      	mortality rate (default = 0.1)
 R                   5
@@ -24,7 +24,7 @@ M               1   0.01		                     			    dispersal rate between pat
 RHO                 0.5                                        	scaling factor determining the width of the dispersal kernel  (default = 1)
 
 evolution parameters
-OMEGAE              0.2                                     	niche tolerance (default = 0.02)
+OMEGAE              0.05                                     	niche tolerance (default = 0.02)
 TRAITLOCI           160                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
 MU                  1e-4                                     	mutation rate (default = 1e-4)
 // SEXTYPE             SWITCH
@@ -37,8 +37,8 @@ SIGMAZ              0.01                                     	phenotypic standar
 
 
 run parameters
-RUNS                1                                        	number of replicate runs (default = 1)
-TIMESTEPS           10000                                   	number of time steps in a run (default = 10000)
-PRINTSTEPS          100		                               	time steps between console output (default = 100)
-SAVESTEPS           100                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_absfit_dim16_regional_prob.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+RUNS                5                                        	number of replicate runs (default = 1)
+TIMESTEPS           25000                                   	number of time steps in a run (default = 10000)
+PRINTSTEPS          1000		                               	time steps between console output (default = 100)
+SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
+OUTPUT              results_test4_dim1_regional_prob.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
