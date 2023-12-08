@@ -71,8 +71,8 @@ public class EvolSex {
                                     sites.reproduction();
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
-                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; migrCnt = %.0f%n",
-                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), Auxils.arrayMean(sites.migrationCounter));
+                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; migrCnt = %.0f; effMigr = %.3f%n",
+                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), Auxils.arrayMean(sites.migrationCounter), (Auxils.arrayMean(sites.migrationCounter)-1)/((t+1)*comm.microsites));
 //                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
                                     }
                                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
@@ -324,6 +324,7 @@ class Sites {
         }
 
         if(nbrDisp > 0) {
+            // System.out.println("     disp: " + nbrDisp);
             int oldPos, newPos;
             int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
             Auxils.arrayShuffle(dispShuffle);
@@ -331,6 +332,13 @@ class Sites {
             for (int i = 1; i < nbrDisp; i++) {
                 oldPos = dispShuffle[i];
                 newPos = dispShuffle[i - 1];
+                int i2 = i+1;
+                while(patch[oldPos] == patch[newPos] && i2 < nbrDisp) {
+                    dispShuffle[i] = dispShuffle[i2];
+                    dispShuffle[i2] = oldPos;
+                    oldPos = dispShuffle[i];
+                    i2++;
+                }
                 // System.out.println("     disp: ");
                 // System.out.println("     old patch = " + patch[oldPos] + "; old pos = " + oldPos);
                 // System.out.println("     new patch = " + patch[newPos] + "; new pos = " + newPos);
