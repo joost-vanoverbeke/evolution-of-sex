@@ -1,0 +1,23 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-sampling-1.5-javadoc.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-sampling-1.5-sources.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-sampling-1.5.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-simple-1.5-javadoc.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-simple-1.5-sources.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-simple-1.5.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-core-1.5-javadoc.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-core-1.5-sources.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-core-1.5.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-client-api-1.5-javadoc.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-client-api-1.5-sources.jar",
+        "/home/joost/commons_java_libraries/commons-rng-1.5/commons-rng-client-api-1.5.jar",
+        "/home/joost/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1-javadoc.jar",
+        "/home/joost/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1-tests.jar",
+        "/home/joost/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1-test-sources.jar",
+        "/home/joost/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1-sources.jar",
+        "/home/joost/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1.jar",
+        "/home/joost/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1-tools.jar"
+    ]
+}
