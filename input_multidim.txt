@@ -6,16 +6,16 @@ lines not starting with an input tag (e.g. starting with '//') are ignored
 non initialized parameters receive a default value
 
 ecological parameters
-ENVDIMS		        4											number of niche dimensions (default = 1)
+ENVDIMS		        16											number of niche dimensions (default = 1)
 TRAITS		        16											number of traits (default = 2)
-MINENV              -1                                      	minimum environmental value (between 0 and 1) (default = 0.2)
-MAXENV              1                                      	maximum environmental value (between 0 and 1) (default = 0.8)
-MICROSITES          400    										number of microsites in each patch (default = 600)
+MINENV              -2                                      	minimum environmental value (between 0 and 1) (default = 0.2)
+MAXENV              2                                      	maximum environmental value (between 0 and 1) (default = 0.8)
+MICROSITES          100    										number of microsites in each patch (default = 600)
 D                   0.05                                      	mortality rate (default = 0.1)
 R                   5
-PSEX 	            0.											initial probability of sexual reproduction (default = 0)
+PSEX 	        1   0.											initial probability of sexual reproduction (default = 0)
 COST			1	0.5											demographic cost of sexual reproduction (default = 0.5)
-GRIDSIZE            4                                        	number of patches = gridsize^2 (default = 2)
+GRIDSIZE            10                                        	number of patches = gridsize^2 (default = 2)
 ENVTYPE				REGIONAL
 // ENVTYPE				LOCAL
 PCHANGE		    1   0.1											probability of environmental change along each niche dimension (default = 0.1)
