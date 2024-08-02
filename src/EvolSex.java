@@ -409,7 +409,7 @@ class Sites {
 // regular selection
                 alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fit;
 // density dependent selection
-                // surv = Math.max(1 - (popS[p] - fit*popS[p])/(1*comm.microsites), 0);
+                // surv = Math.max(1 + popS[p]/(1*comm.microsites)*(fit-1), 0);
                 // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * surv;
 // K dependent selection
                 // surv = Math.max(1 - popS[p]/(fit*2*comm.microsites), 0);
