@@ -59,20 +59,21 @@ public class EvolSex {
 
                                 sites = new Sites(comm, evol, init, dc, es, dr);
 
-                                System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.4f%n",
+                                System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
                                         0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
                                 logResults(0, streamOut, r, dc, pc, es, dr, ps);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
                                     if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
                                         sites.changeEnvironment();
-                                    sites.disperse();
                                     sites.findMaxFitness();
+                                    sites.mortality();
+                                    sites.disperse();
                                     sites.contributionAdults();
                                     sites.reproduction();
 
                                     if (t == 0 || ((t + 1) % run.printSteps) == 0) {
-                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.4f%n",
+                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
                                                 (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
 //                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
                                     }
@@ -90,7 +91,7 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;rho;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;omega_e;"
+        out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
                 + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
                 + "residence_distinct;residence_div;distinct_pop;div_pop");
@@ -103,8 +104,8 @@ public class EvolSex {
 
     static void logResults(int t, PrintWriter out, int r, int dc, int pc, int es, int dr, int ps) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%s;%s;%f;%d;%d;%f;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%f;%f;%f;%f",
-                    comm.envType, comm.sexType, comm.pSex[ps], comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.rho, comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
+            out.format("%s;%s;%f;%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%f;%f;%f;%f",
+                    comm.envType, comm.sexType, comm.pSex[ps], comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
@@ -250,8 +251,9 @@ class Sites {
                     }
 
                     for (int l = 0; l < evol.dispLoci; l++) {
-                        if (l < Math.round(Math.pow(comm.dispRate[drPos]*evol.dispCorr, 1/evol.dispPow)*evol.dispLoci)) {
-                            genotype[m][evol.dispMother[l]] = genotype[m][evol.dispFather[l]] = (byte) 1;
+                        // if (l < Math.round(Math.pow(comm.dispRate[drPos]*evol.dispCorr, 1/evol.dispPow)*evol.dispLoci)) {
+                        if (l < Math.round((1 - Math.log(comm.dispRate[drPos])/Math.log(evol.refDisp)*(1-0.2))*evol.dispLoci)) {
+                                genotype[m][evol.dispMother[l]] = genotype[m][evol.dispFather[l]] = (byte) 1;
                         } else {
                             genotype[m][evol.dispMother[l]] = genotype[m][evol.dispFather[l]] = (byte) 0;
                         }
@@ -264,7 +266,8 @@ class Sites {
                 if (maxFitness[p] < fitness[m])
                     maxFitness[p] = fitness[m];
                     pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.sexGenes))));
-                    pDisp[m] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))),evol.dispPow)/evol.dispCorr;
+                    // pDisp[m] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))),evol.dispPow)/evol.dispCorr;
+                    pDisp[m] = Math.exp(Math.log(evol.refDisp)*(1 - Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))))/(1 - 0.2));
                 }
         }
     }
@@ -341,12 +344,17 @@ class Sites {
             // if(alive[i] && Auxils.random.nextDouble() < comm.dispRate[drPos]) {
             //     posDisp[nbrDisp++] = i;
             // }
-            // if((!alive[i]) || Auxils.random.nextDouble() < comm.dispRate[drPos]) {
-            if((!alive[i]) || Auxils.random.nextDouble() < pDisp[i]) {
+            if(evol.mutationRateDisp == 0) {
+                if((!alive[i]) || Auxils.random.nextDouble() < comm.dispRate[drPos]) {
+                        posDisp[nbrDisp++] = i;
+                    // if (alive[i]) {
+                    //     aliveDisp++;
+                    // }
+                }
+            } else {
+                if((!alive[i]) || Auxils.random.nextDouble() < pDisp[i]) {
                     posDisp[nbrDisp++] = i;
-                // if (alive[i]) {
-                //     aliveDisp++;
-                // }
+                }
             }
         }
 
@@ -396,21 +404,10 @@ class Sites {
                 maxFitness[patch[i]] = fitness[i];
     }
 
-    void contributionAdults() {
-        Arrays.fill(endPosFathers, 0);
-        Arrays.fill(endPosMothers, 0);
-        Arrays.fill(nbrEmpty, 0);
-        Arrays.fill(production, 0.);
-
-        double contr = 0., fit = 0.; 
+    void mortality() {
+        double fit = 0.; 
         // double surv = 0.;
         int p;
-
-        // int[] popS = new int[comm.nbrPatches];
-        // Arrays.fill(popS, 0);
-        // for (p = 0; p < comm.nbrPatches; p++) {
-        //     popS[p] = popSize(p);
-        // }
 
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
@@ -431,6 +428,26 @@ class Sites {
                 // surv = Math.max(fit*(1 - popS[p]/(comm.microsites*2)), 0);
                 // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * surv;
             }
+        }
+    }
+    
+    void contributionAdults() {
+        Arrays.fill(endPosFathers, 0);
+        Arrays.fill(endPosMothers, 0);
+        Arrays.fill(nbrEmpty, 0);
+        Arrays.fill(production, 0.);
+
+        double contr = 0.; 
+        int p;
+
+        // int[] popS = new int[comm.nbrPatches];
+        // Arrays.fill(popS, 0);
+        // for (p = 0; p < comm.nbrPatches; p++) {
+        //     popS[p] = popSize(p);
+        // }
+
+        for (int i = 0; i < totSites; i++) {
+            p = patch[i];
             if (alive[i]) {
 
 //                for (int l = 0; l < (2*evol.allLoci); l++) {
@@ -534,12 +551,12 @@ class Sites {
             traitFitness[pos][tr] = calcFitness(traitPhenotype[pos][tr], environment[p][comm.traitDim[tr]]);
             fitness[pos] *= traitFitness[pos][tr];
         }
-        if (maxFitness[p] < fitness[pos])
-            maxFitness[p] = fitness[pos];
-            pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
-            pDisp[m] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))),evol.dispPow)/evol.dispCorr;
-        }
-
+        // if (maxFitness[p] < fitness[pos])
+        //     maxFitness[p] = fitness[pos];
+        pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
+//        pDisp[pos] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.dispGenes)))), evol.dispPow) / evol.dispCorr;
+        pDisp[pos] = Math.exp(Math.log(evol.refDisp)*(1 - Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.dispGenes)))))/(1 - 0.2));
+    }
 
 //    void settle(int p, int[] posOffspring, int[] patchOrigin) {
 //        int pos;
@@ -1162,7 +1179,7 @@ class Comm {
     double[] pChange = {0.1};
     double[] envStep = {0.01};
     double[] dispRate = {0.01};
-    double rho = 1;
+    // double rho = 1;
     String sexType = "SWITCH";
     double[] pSex = {0.};
 
@@ -1189,9 +1206,10 @@ class Evol {
     int traitLoci = 20;
     int lociPerTrait = traitLoci;
     int sexLoci = 10;
-    int dispLoci = 10;
+    int dispLoci = 20;
     double dispCorr = 2;
     double dispPow = 4;
+    double refDisp = 1e-4;
     int allLoci = traitLoci + sexLoci + dispLoci;
     double mutationRate = 1e-4;
     double mutationRateSex = 1e-5;
@@ -1399,9 +1417,9 @@ class Reader {
                         for (int i = 0; i < size; i++)
                             comm.dispRate[i] = Double.parseDouble(words[2 + i]);
                         break;
-                    case "RHO":
-                        comm.rho = Double.parseDouble(words[1]);
-                        break;
+                    // case "RHO":
+                    //     comm.rho = Double.parseDouble(words[1]);
+                    //     break;
 
                     case "OMEGAE":
                         evol.omegaE = Double.parseDouble(words[1]);
@@ -1420,6 +1438,12 @@ class Reader {
                         break;
                     case "MUSEX":
                         evol.mutationRateSex = Double.parseDouble(words[1]);
+                        break;
+                    case "DISPLOCI":
+                        evol.dispLoci = Integer.parseInt(words[1]);
+                        break;
+                    case "MUDISP":
+                        evol.mutationRateDisp = Double.parseDouble(words[1]);
                         break;
                     case "SIGMAZ":
                         evol.sigmaZ = Double.parseDouble(words[1]);
