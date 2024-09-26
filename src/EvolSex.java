@@ -151,13 +151,17 @@ class Sites {
     double[][] environment;
     double[] maxFitness;
 
-    int posDisp[];
-    int nbrDisp;
+    int[] popN;
 
     int[][] posEmpty;
     int[] nbrEmpty;
     double[] production;
     int nbrSettled;
+
+    int posDisp[];
+    int nbrDisp;
+
+    double[] pDispSum;
 
     boolean[] sexAdults;
     int[] endPosMothers;
@@ -196,11 +200,14 @@ class Sites {
         environment = new double[comm.nbrPatches][comm.envDims];
         maxFitness = new double[comm.nbrPatches];
 
-        posDisp = new int[totSites];
+        popN = new int[comm.nbrPatches];
 
         posEmpty = new int[comm.nbrPatches][comm.microsites];
         nbrEmpty = new int[comm.nbrPatches];
         production = new double[comm.nbrPatches];
+
+        posDisp = new int[totSites];
+        pDispSum = new double[comm.nbrPatches];
 
         sexAdults = new boolean[totSites];
 
@@ -224,6 +231,7 @@ class Sites {
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
                 alive[m] = true;
+                popN[p]++;
                 fitness[m] = 1;
                 for (int tr = 0; tr < comm.traits; tr++) {
                     traitFitness[m][tr] = 1;
@@ -265,10 +273,12 @@ class Sites {
                 }
                 if (maxFitness[p] < fitness[m])
                     maxFitness[p] = fitness[m];
-                    pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.sexGenes))));
-                    // pDisp[m] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))),evol.dispPow)/evol.dispCorr;
-                    pDisp[m] = Math.exp(Math.log(evol.refDisp)*(1 - Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))))/(1 - 0.2));
-                }
+                pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.sexGenes))));
+                // pDisp[m] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))),evol.dispPow)/evol.dispCorr;
+                pDisp[m] = Math.exp(Math.log(evol.refDisp)*(1 - Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[m], evol.dispGenes)))))/(1 - 0.2));
+
+                pDispSum[p] += pDisp[m];
+            }
         }
     }
 
@@ -335,68 +345,6 @@ class Sites {
         }
     }
 
-    // dispersal
-    void disperse() {
-        nbrDisp = 0;
-        // int aliveDisp = 0;
-
-        for (int i = 0; i < totSites; i++) {
-            // if(alive[i] && Auxils.random.nextDouble() < comm.dispRate[drPos]) {
-            //     posDisp[nbrDisp++] = i;
-            // }
-            if(evol.mutationRateDisp == 0) {
-                if((!alive[i]) || Auxils.random.nextDouble() < comm.dispRate[drPos]) {
-                        posDisp[nbrDisp++] = i;
-                    // if (alive[i]) {
-                    //     aliveDisp++;
-                    // }
-                }
-            } else {
-                if((!alive[i]) || Auxils.random.nextDouble() < pDisp[i]) {
-                    posDisp[nbrDisp++] = i;
-                }
-            }
-        }
-
-        if(nbrDisp > 0) {
-            // if (nbrDisp > aliveDisp) {
-            //     System.out.println("     disp: " + nbrDisp + ",  alive disp: " + aliveDisp + ",  popsize: " + metapopSize());
-            // }
-            int oldPos, newPos;
-            int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
-            Auxils.arrayShuffle(dispShuffle);
-            byte[] tempGen = Arrays.copyOf(genotype[dispShuffle[0]], 2 * evol.allLoci);
-            boolean tempAlive = alive[dispShuffle[0]];
-            for (int i = 1; i < nbrDisp; i++) {
-                oldPos = dispShuffle[i];
-                newPos = dispShuffle[i - 1];
-                int i2 = i+1;
-                while(patch[oldPos] == patch[newPos] && i2 < nbrDisp) {
-                    dispShuffle[i] = dispShuffle[i2];
-                    dispShuffle[i2] = oldPos;
-                    oldPos = dispShuffle[i];
-                    i2++;
-                }
-                // System.out.println("     disp: ");
-                // System.out.println("     old patch = " + patch[oldPos] + "; old pos = " + oldPos);
-                // System.out.println("     new patch = " + patch[newPos] + "; new pos = " + newPos);
-                if (alive[oldPos]) {
-                    System.arraycopy(genotype[oldPos], 0, genotype[newPos], 0, 2 * evol.allLoci);
-                    settleRest(newPos, oldPos);
-                } else {
-                    alive[newPos] = false;
-                }
-            }
-            newPos = dispShuffle[nbrDisp - 1];
-            if (tempAlive) {
-                System.arraycopy(tempGen, 0, genotype[newPos], 0, 2 * evol.allLoci);
-                settleRest(newPos, dispShuffle[0]);
-            } else {
-                alive[newPos] = false;
-            }
-        }
-    }
-
     void findMaxFitness() {
         Arrays.fill(maxFitness, 0.);
         for (int i = 0; i < totSites; i++)
@@ -417,7 +365,9 @@ class Sites {
 // hard selection
                 // fit = fitness[i];
 // regular selection
-                alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fit;
+                // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fit;
+                if (Auxils.random.nextDouble() >= (1 - comm.d) * fit)
+                    removeInd(i);
 // density dependent selection
                 // surv = Math.max(1 + popS[p]/(1*comm.microsites)*(fit-1), 0);
                 // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * surv;
@@ -431,6 +381,81 @@ class Sites {
         }
     }
     
+    // dispersal
+    void disperse() {
+        nbrDisp = 0;
+        // int aliveDisp = 0;
+        double maxDisp = 0;
+        double iDisp;
+        int maxN = 0;
+        double[] pEmpty = new double[comm.nbrPatches];
+        maxDisp = Auxils.arrayMax(pDispSum);
+        maxN = Auxils.arrayMax(popN);
+        
+        for (int p = 0; p < comm.nbrPatches; p++) {
+            if (evol.mutationRateDisp == 0) 
+                pEmpty[p] = (1. + Math.round(maxN*comm.dispRate[drPos] - popN[p]*comm.dispRate[drPos]))/(double)(comm.microsites - popN[p]);
+            else 
+                pEmpty[p] = (1. + Math.round(maxDisp - pDispSum[p]))/(double)(comm.microsites - popN[p]);
+        }
+
+        for (int i = 0; i < totSites; i++) {
+            // if(alive[i] && Auxils.random.nextDouble() < comm.dispRate[drPos]) {
+            //     posDisp[nbrDisp++] = i;
+            // }
+            if (alive[i]) {
+                if (evol.mutationRateDisp == 0)
+                    iDisp = comm.dispRate[drPos];
+                else 
+                    iDisp = pDisp[i];
+            if (Auxils.random.nextDouble() < iDisp) 
+                posDisp[nbrDisp++] = i;
+            } else if (Auxils.random.nextDouble() < pEmpty[patch[i]]) 
+                posDisp[nbrDisp++] = i;
+        }
+
+        if(nbrDisp > 0) {
+            // if (nbrDisp > aliveDisp) {
+            //     System.out.println("     disp: " + nbrDisp + ",  alive disp: " + aliveDisp + ",  popsize: " + metapopSize());
+            // }
+            int oldPos, newPos;
+            int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
+            Auxils.arrayShuffle(dispShuffle);
+            byte[] tempGen = Arrays.copyOf(genotype[dispShuffle[0]], 2 * evol.allLoci);
+            boolean tempAlive = alive[dispShuffle[0]];
+            if (tempAlive)
+                removeInd(dispShuffle[0]);
+            for (int i = 1; i < nbrDisp; i++) {
+                oldPos = dispShuffle[i];
+                newPos = dispShuffle[i - 1];
+                int i2 = i+1;
+                while(patch[oldPos] == patch[newPos] && i2 < nbrDisp) {
+                    dispShuffle[i] = dispShuffle[i2];
+                    dispShuffle[i2] = oldPos;
+                    oldPos = dispShuffle[i];
+                    i2++;
+                }
+                // System.out.println("     disp: ");
+                // System.out.println("     old patch = " + patch[oldPos] + "; old pos = " + oldPos);
+                // System.out.println("     new patch = " + patch[newPos] + "; new pos = " + newPos);
+                if (alive[oldPos]) {
+                    System.arraycopy(genotype[oldPos], 0, genotype[newPos], 0, 2 * evol.allLoci);
+                    settleRest(newPos, oldPos);
+                    removeInd(oldPos);
+                } else {
+                    alive[newPos] = false;
+                }
+            }
+            newPos = dispShuffle[nbrDisp - 1];
+            if (tempAlive) {
+                System.arraycopy(tempGen, 0, genotype[newPos], 0, 2 * evol.allLoci);
+                settleRest(newPos, dispShuffle[0]);
+            } else {
+                alive[newPos] = false;
+            }
+        }
+    }
+
     void contributionAdults() {
         Arrays.fill(endPosFathers, 0);
         Arrays.fill(endPosMothers, 0);
@@ -535,6 +560,7 @@ class Sites {
     void settleRest(int pos, int m) {
         int p = patch[pos];
         alive[pos] = true;
+        popN[p]++;
         if (patch[m] != p) {
             newMigrant(pos);
 //            for (int l = 0; l < evol.allLoci; l++) {
@@ -556,7 +582,17 @@ class Sites {
         pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.sexGenes))));
 //        pDisp[pos] = Math.pow(Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.dispGenes)))), evol.dispPow) / evol.dispCorr;
         pDisp[pos] = Math.exp(Math.log(evol.refDisp)*(1 - Math.min(1, Math.max(0, Auxils.arrayMean(Auxils.arrayElements(genotype[pos], evol.dispGenes)))))/(1 - 0.2));
+
+        pDispSum[p] += pDisp[pos];
     }
+
+    void removeInd (int pos) {
+        int p = patch[pos];
+        alive[pos] = false;
+        popN[p]--;
+        pDispSum[p] -= pDisp[pos];
+    }
+
 
 //    void settle(int p, int[] posOffspring, int[] patchOrigin) {
 //        int pos;
@@ -707,19 +743,21 @@ class Sites {
     }
 
     int metapopSize() {
-        int tot = 0;
-        for (int i = 0; i < totSites; i++)
-            if (alive[i])
-                tot ++;
-        return tot;
+        // int tot = 0;
+        // for (int i = 0; i < totSites; i++)
+        //     if (alive[i])
+        //         tot ++;
+        // return tot;
+        return Auxils.arraySum(popN);
     }
 
     int popSize(int p) {
-        int tot = 0;
-        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
-            if (alive[i])
-                tot ++;
-        return tot;
+        // int tot = 0;
+        // for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+        //     if (alive[i])
+        //         tot ++;
+        // return tot;
+        return popN[p];
     }
 
     double genotypeMean(int t) {
@@ -1131,21 +1169,23 @@ class Sites {
     }
 
     double pDisp() {
-        double mean = 0;
-        for (int i = 0; i < totSites; i++)
-            if (alive[i])
-                mean += pDisp[i];
-        mean /= metapopSize();
-        return mean;
+        // double mean = 0;
+        // for (int i = 0; i < totSites; i++)
+        //     if (alive[i])
+        //         mean += pDisp[i];
+        // mean /= metapopSize();
+        // return mean;
+        return Auxils.arraySum(pDispSum)/Auxils.arraySum(popN);
     }
 
     double pDisp(int p) {
-        double mean = 0;
-        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
-            if (alive[i])
-                mean += pDisp[i];
-        mean /= popSize(p);
-        return mean;
+        // double mean = 0;
+        // for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+        //     if (alive[i])
+        //         mean += pDisp[i];
+        // mean /= popSize(p);
+        // return mean;
+        return pDispSum[p]/popN[p];
     }
 
     double pDispVar(int p) {
