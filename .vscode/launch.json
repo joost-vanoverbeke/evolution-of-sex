@@ -4,18 +4,13 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "type": "java",
-            "name": "Current File",
-            "request": "launch",
-            "mainClass": "${file}"
-        },
+        
         {
             "type": "java",
             "name": "EvolSex",
             "request": "launch",
             "mainClass": "EvolSex",
-            "projectName": "evolution-of-sex_a09a4187",
+            "projectName": "evolution-of-sex_c7de93e5",
             "args": "input_multidim.txt"
         }
     ]
