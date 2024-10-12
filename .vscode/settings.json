@@ -11,7 +11,12 @@
         "/home/joostv/commons_java_libraries/commons-math3-3.6.1/commons-math3-3.6.1-tools.jar",
         "/home/joostv/commons_java_libraries/commons-rng-1.5/commons-rng-simple-1.5-javadoc.jar",
         "/home/joostv/commons_java_libraries/commons-rng-1.5/commons-rng-simple-1.5.jar",
-        "/home/joostv/commons_java_libraries/commons-rng-1.5/commons-rng-client-api-1.5.jar"
+        "/home/joostv/commons_java_libraries/commons-rng-1.5/commons-rng-client-api-1.5.jar",
+        "/home/joostv/commons_java_libraries/commons-lang3-3.17.0/commons-lang3-3.17.0.jar",
+        "/home/joostv/commons_java_libraries/commons-lang3-3.17.0/commons-lang3-3.17.0-tests.jar",
+        "/home/joostv/commons_java_libraries/commons-lang3-3.17.0/commons-lang3-3.17.0-test-sources.jar",
+        "/home/joostv/commons_java_libraries/commons-lang3-3.17.0/commons-lang3-3.17.0-sources.jar",
+        "/home/joostv/commons_java_libraries/commons-lang3-3.17.0/commons-lang3-3.17.0-javadoc.jar"
     ],
     "java.project.sourcePaths": [
         "src"
