@@ -8,7 +8,7 @@ import org.apache.commons.rng.sampling.distribution.SharedStateDiscreteSampler;
 import org.apache.commons.rng.sampling.distribution.ZigguratNormalizedGaussianSampler;
 import org.apache.commons.rng.simple.RandomSource;
 
-import org.apache.commons.lang3.ArrayUtils;
+// import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.*;
 import java.util.Arrays;
@@ -93,7 +93,7 @@ public class EvolSex {
     }
 
 static void logTitles(PrintWriter out) {
-    out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;pleio;troff;omega_e;"
+    out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;pleio;omega_e;"
     + "run;time;patch;N;"
     + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
     + "residence_distinct;residence_div;distinct_pop;div_pop");
@@ -109,8 +109,8 @@ static void logTitles(PrintWriter out) {
 
     static void logResults(int t, PrintWriter out, int r, int dc, int pc, int es, int dr, int ps) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%s;%s;%f;%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%f;%f;%f;%f;%f;%f",
-                    comm.envType, comm.sexType, comm.pSex[ps], comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.pleio, comm.trOff, evol.omegaE);
+            out.format("%s;%s;%f;%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%f;%f;%f;%f;%f",
+                    comm.envType, comm.sexType, comm.pSex[ps], comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.pleio, evol.omegaE);
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
@@ -276,8 +276,8 @@ class Sites {
                     }
 
                     traitPhenotype[m][tr] = calcPhenotype(m, tr);
-                    // traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
-                    traitFitness[m][tr] = calcFitness(p, traitPhenotype[m][tr], comm.traitDim[tr]);
+                    traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
+                    // traitFitness[m][tr] = calcFitness(p, traitPhenotype[m][tr], comm.traitDim[tr]);
                     fitness[m] *= traitFitness[m][tr];
                 }
                 if (maxFitness[p] < fitness[m])
@@ -295,16 +295,16 @@ class Sites {
         return Auxils.arrayMean(Auxils.arrayElements(genotype[i], evol.traitGenes[tr])) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
     }
 
-    // double calcFitness(double phenot, double env) {
-    //     return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
-    // }
-    double calcFitness(int p, double phenot, int[] dims) {
-        double fit = 1;
-        for (int d : dims) {
-            fit *= Math.exp(-(Math.pow(phenot - environment[p][d], 2)) / evol.divF);
-        }
-        return fit;
+    double calcFitness(double phenot, double env) {
+        return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
+    // double calcFitness(int p, double phenot, int[] dims) {
+    //     double fit = 1;
+    //     for (int d : dims) {
+    //         fit *= Math.exp(-(Math.pow(phenot - environment[p][d], 2)) / evol.divF);
+    //     }
+    //     return fit;
+    // }
 
 //    void changeEnvironment() {
 //        boolean globalEnv = comm.envType.equals("REGIONAL");
@@ -342,25 +342,6 @@ class Sites {
         }
     }
 
-    // void adjustFitness(int p, int d) {
-    //     double oldFit;
-    //     for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
-    //         if (alive[m]) {
-    //             oldFit = fitness[m];
-    //             if (oldFit == 0)
-    //                 fitness[m] = 1;
-    //             for (int tr = 0; tr < comm.traits; tr++) {
-    //                 if ((oldFit != 0) && (comm.traitDim[tr] == d))
-    //                     fitness[m] /= traitFitness[m][tr];
-    //                 if ((oldFit == 0) || (comm.traitDim[tr] == d)) {
-    //                     traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
-    //                     fitness[m] *= traitFitness[m][tr];
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     void adjustFitness(int p, int d) {
         double oldFit;
         for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
@@ -369,16 +350,35 @@ class Sites {
                 if (oldFit == 0)
                     fitness[m] = 1;
                 for (int tr = 0; tr < comm.traits; tr++) {
-                    if ((oldFit != 0) && (ArrayUtils.contains(comm.traitDim[tr], d)))
+                    if ((oldFit != 0) && (comm.traitDim[tr] == d))
                         fitness[m] /= traitFitness[m][tr];
-                    if ((oldFit == 0) || (ArrayUtils.contains(comm.traitDim[tr], d))) {
-                        traitFitness[m][tr] = calcFitness(p, traitPhenotype[m][tr], comm.traitDim[tr]);
+                    if ((oldFit == 0) || (comm.traitDim[tr] == d)) {
+                        traitFitness[m][tr] = calcFitness(traitPhenotype[m][tr], environment[p][comm.traitDim[tr]]);
                         fitness[m] *= traitFitness[m][tr];
                     }
                 }
             }
         }
     }
+
+    // void adjustFitness(int p, int d) {
+    //     double oldFit;
+    //     for (int m = (p * comm.microsites); m < ((p + 1) * comm.microsites); m++) {
+    //         if (alive[m]) {
+    //             oldFit = fitness[m];
+    //             if (oldFit == 0)
+    //                 fitness[m] = 1;
+    //             for (int tr = 0; tr < comm.traits; tr++) {
+    //                 if ((oldFit != 0) && (ArrayUtils.contains(comm.traitDim[tr], d)))
+    //                     fitness[m] /= traitFitness[m][tr];
+    //                 if ((oldFit == 0) || (ArrayUtils.contains(comm.traitDim[tr], d))) {
+    //                     traitFitness[m][tr] = calcFitness(p, traitPhenotype[m][tr], comm.traitDim[tr]);
+    //                     fitness[m] *= traitFitness[m][tr];
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     void findMaxFitness() {
         Arrays.fill(maxFitness, 0.);
@@ -609,8 +609,8 @@ class Sites {
         fitness[pos] = 1;
         for (int tr = 0; tr < comm.traits; tr++) {
             traitPhenotype[pos][tr] = calcPhenotype(pos, tr);
-            // traitFitness[pos][tr] = calcFitness(traitPhenotype[pos][tr], environment[p][comm.traitDim[tr]]);
-            traitFitness[pos][tr] = calcFitness(p, traitPhenotype[pos][tr], comm.traitDim[tr]);
+            traitFitness[pos][tr] = calcFitness(traitPhenotype[pos][tr], environment[p][comm.traitDim[tr]]);
+            // traitFitness[pos][tr] = calcFitness(p, traitPhenotype[pos][tr], comm.traitDim[tr]);
             fitness[pos] *= traitFitness[pos][tr];
         }
         // if (maxFitness[p] < fitness[pos])
@@ -1259,31 +1259,31 @@ class Comm {
     String sexType = "SWITCH";
     double[] pSex = {0.};
     
-    // int[] traitDim;
-    int[][] traitDim;
-    double trOff = 0.0;
-    int trOffTraits = (int)(traits * trOff);
+    int[] traitDim;
+    // int[][] traitDim;
+    // double trOff = 0.0;
+    // int trOffTraits = (int)(traits * trOff);
     
     void init() {
         nbrPatches = gridSize * gridSize;
         
-        // traitDim = new int[traits];
-        traitDim = new int[traits][];
-        trOffTraits = (int)(traits * trOff);
-        int[] enumTraits = Auxils.enumArray(0, traits - 1);
-        int[] enumDims = Auxils.enumArray(0, envDims - 1);
-        int[] sampleTraits = Auxils.arraySample(trOffTraits, enumTraits);
-        double[] dimProbs = new double[envDims];
-        Arrays.fill(dimProbs, 1./envDims);
-        int[] sampleDims = Auxils.arraySampleProb(trOffTraits, enumDims, dimProbs, true);
+        traitDim = new int[traits];
+        // traitDim = new int[traits][];
+        // trOffTraits = (int)(traits * trOff);
+        // int[] enumTraits = Auxils.enumArray(0, traits - 1);
+        // int[] enumDims = Auxils.enumArray(0, envDims - 1);
+        // int[] sampleTraits = Auxils.arraySample(trOffTraits, enumTraits);
+        // double[] dimProbs = new double[envDims];
+        // Arrays.fill(dimProbs, 1./envDims);
+        // int[] sampleDims = Auxils.arraySampleProb(trOffTraits, enumDims, dimProbs, true);
         
         int dim = 0;
         for (int tr = 0; tr < traits; tr++) {
-            // traitDim[tr] = dim++;
-            if (ArrayUtils.contains(sampleTraits, tr))
-                traitDim[tr] = new int[]{dim++, sampleDims[ArrayUtils.indexOf(sampleTraits, tr)]};
-            else 
-                traitDim[tr] = new int[]{dim++};
+            traitDim[tr] = dim++;
+        //     if (ArrayUtils.contains(sampleTraits, tr))
+        //         traitDim[tr] = new int[]{dim++, sampleDims[ArrayUtils.indexOf(sampleTraits, tr)]};
+        //     else 
+        //         traitDim[tr] = new int[]{dim++};
             if (dim == envDims)
                 dim = 0;
         }
@@ -1334,8 +1334,8 @@ class Evol {
         int[] shuffleTraits;
         int shufflePos = 0;
     
-        // divF = 2 * Math.pow(Math.sqrt(comm.traits) * omegaE, 2);
-        divF = 2 * Math.pow(Math.sqrt(comm.traits + comm.trOffTraits) * omegaE, 2);
+        divF = 2 * Math.pow(Math.sqrt(comm.traits) * omegaE, 2);
+        // divF = 2 * Math.pow(Math.sqrt(comm.traits + comm.trOffTraits) * omegaE, 2);
 
         allLoci = traitLoci + sexLoci + dispLoci;
 
@@ -1461,13 +1461,18 @@ class Init {
 
         for (int p = 0; p < comm.nbrPatches; p++) {
             for (int tr = 0; tr < comm.traits; tr++) {
-                double gtp = 0;
-                int nd = comm.traitDim[tr].length;
-                for (int d : comm.traitDim[tr])
-                    gtp += environment[p][d];
-                genotype[p][tr] = gtp/nd;
+                genotype[p][tr] = environment[p][comm.traitDim[tr]];
             }
         }
+        // for (int p = 0; p < comm.nbrPatches; p++) {
+        //     for (int tr = 0; tr < comm.traits; tr++) {
+        //         double gtp = 0;
+        //         int nd = comm.traitDim[tr].length;
+        //         for (int d : comm.traitDim[tr])
+        //             gtp += environment[p][d];
+        //         genotype[p][tr] = gtp/nd;
+        //     }
+        // }
         pSex = comm.pSex[ps];
     }
 }
@@ -1549,9 +1554,9 @@ class Reader {
                     // case "RHO":
                     //     comm.rho = Double.parseDouble(words[1]);
                     //     break;
-                    case "TROFF":
-                        comm.trOff = Double.parseDouble(words[1]);
-                        break;
+                    // case "TROFF":
+                    //     comm.trOff = Double.parseDouble(words[1]);
+                    //     break;
 
                     case "OMEGAE":
                         evol.omegaE = Double.parseDouble(words[1]);
