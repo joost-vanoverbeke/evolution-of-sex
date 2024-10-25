@@ -93,7 +93,7 @@ public class EvolSex {
     static void logTitles(PrintWriter out) {
         out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
-                + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;load_mean;load_var;S_mean;S_var;"
+                + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;abs_fitness_max;load_mean;load_var;abs_contr_mean;abs_contr_max;rel_contr_mean;rel_contr_max;S_mean;S_var;"
                 + "residence_distinct;residence_div;distinct_pop;div_pop");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
@@ -109,9 +109,9 @@ public class EvolSex {
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
-                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
+                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
                             + "%f;%f;%f;%f",
-                            sites.pSex(p), sites.pSexVar(p), sites.pDisp(p), sites.pDispVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
+                            sites.pSex(p), sites.pSexVar(p), sites.pDisp(p), sites.pDispVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.absFitnessMax(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.absContrMean(p), sites.absContrMax(p), sites.relContrMean(p), sites.relContrMax(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
                     sites.residenceDistinctMean(p),sites.residenceDivMean(p),sites.residenceDistinctPop(p),sites.residenceDivPop(p));
             for (int tr = 0; tr < comm.traits; tr++)
                 out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f",
@@ -953,6 +953,58 @@ class Sites {
         var /= popSize(p);
         return var;
     }
+
+    double absFitnessMax(int p) {
+        double max = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
+            if (alive[i]) {
+                if (fitness[i] > max)
+                    max = fitness[i];
+            }
+        }
+        return max;
+    }
+
+    double absContrMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += fitness[i]*(1 - pSex[i]/2.);
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double absContrMax(int p) {
+        double max = 0, contr = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                contr = fitness[i]*(1 - pSex[i]/2.);
+                if (contr > max)
+                    max = contr;
+            }
+        return max;
+    }
+
+    double relContrMean(int p) {
+        double mean = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i])
+                mean += (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p])*(1 - pSex[i]/2.);
+        mean /= popSize(p);
+        return mean;
+    }
+
+    double relContrMax(int p) {
+        double max = 0, contr = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+            if (alive[i]) {
+                contr = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p])*(1 - pSex[i]/2.);
+                if (contr > max)
+                    max = contr;
+            }
+        return max;
+    }
+
 
     double residenceDistinctMean(int p) {
         double mean = 0;
