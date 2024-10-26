@@ -64,6 +64,8 @@ public class EvolSex {
                                 logResults(0, streamOut, r, dc, pc, es, dr, ps);
 
                                 for (int t = 0; t < run.timeSteps; t++) {
+                                    // if ((t + 1) == 1000)
+                                    //     sites.seedSex(init);
                                     if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
                                         sites.changeEnvironment();
                                     sites.findMaxFitness();
@@ -221,7 +223,7 @@ class Sites {
         fathersProb = new double[comm.nbrPatches][comm.microsites];
         fathersCumProb = new double[comm.nbrPatches][];
 
-        double indGtp;
+        double indGtp, pS;
         Arrays.fill(maxFitness, 0.);
 
         for (int p = 0; p < comm.nbrPatches; p++) {
@@ -230,6 +232,10 @@ class Sites {
                 patch[m] = p;
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
+                if (init.pSex < 0)
+                    pS = Auxils.random.nextDouble();
+                else
+                    pS = init.pSex;
                 alive[m] = true;
                 popN[p]++;
                 fitness[m] = 1;
@@ -250,7 +256,7 @@ class Sites {
                         //     genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
                         // }
                         for (int l = 0; l < evol.sexLoci; l++) {
-                            if (l < Math.round(init.pSex*evol.sexLoci)) {
+                            if (l < Math.round(pS*evol.sexLoci)) {
                                 genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 1;
                             } else {
                                 genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 0;
@@ -289,6 +295,28 @@ class Sites {
     double calcFitness(double phenot, double env) {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
+
+    void seedSex(Init init) {
+        double pS;
+        for (int p = 0; p < comm.nbrPatches; p++) {
+            for (int i = 0; i < comm.microsites; i++) {
+                if (alive[i]) {
+                    if (init.pSex < 0)
+                    pS = Auxils.random.nextDouble();
+                    else
+                    pS = init.pSex;
+                    for (int l = 0; l < evol.sexLoci; l++) {
+                        if (l < Math.round(pS*evol.sexLoci)) {
+                            genotype[i][evol.sexMother[l]] = genotype[i][evol.sexFather[l]] = (byte) 1;
+                        } else {
+                            genotype[i][evol.sexMother[l]] = genotype[i][evol.sexFather[l]] = (byte) 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
 //    void changeEnvironment() {
 //        boolean globalEnv = comm.envType.equals("REGIONAL");
@@ -514,8 +542,10 @@ class Sites {
         int[] posOffspring;
         int m, f;
         double prod;
+        int endPosPartners = 0;
 
         for (int p = 0; p < comm.nbrPatches; p++) {
+            int[] partners = new int[endPosFathers[p]];
             if (production[p] > 0.) {
                 prod = (production[p] < 1) ? ((Auxils.random.nextDouble() < production[p]) ? 1. : 0.) : production[p];
                 nbrSettled = Math.min(nbrEmpty[p], (int) prod);
@@ -525,7 +555,16 @@ class Sites {
                     m = mothersPos[p][Auxils.randIntCumProb(mothersCumProb[p])];
                     if (sexAdults[m]) {
                         //selfing allowed!
+                        // endPosPartners = 0;
+                        // for (int j = 0; j < endPosFathers[p]; j++) {
+                        //     if (pSex[fathersPos[p][j]] == pSex[m])
+                        //         partners[endPosPartners++] = fathersPos[p][j];
+                        // }
+                        // f = Auxils.arraySample(1, Arrays.copyOf(partners, endPosPartners))[0];
                         f = fathersPos[p][Auxils.randIntCumProb(fathersCumProb[p])];
+                        // while (pSex[f] != pSex[m]) {
+                        //     f = fathersPos[p][Auxils.randIntCumProb(fathersCumProb[p])];
+                        // }
                         settle(posOffspring[i], m, f);
                         //selfing not allowed!
                         // if(endPosFathers[patchMother] > 1) {
@@ -682,8 +721,17 @@ class Sites {
 
         if (comm.sexType.equals("SWITCH")) {
             if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
-                for (int l : evol.sexGenes) {
-                    genotype[posOffspring][l] = (byte) ((genotype[posOffspring][l] == 0) ? 1 : 0);
+                // for (int l : evol.sexGenes) {
+                //     genotype[posOffspring][l] = (byte) ((genotype[posOffspring][l] == 0) ? 1 : 0);
+                // }
+                double pS = Math.pow(Auxils.random.nextDouble(), 1);
+                // System.out.println("new sex =  " + pS);
+                for (int l = 0; l < evol.sexLoci; l++) {
+                    if (l < Math.round(pS*evol.sexLoci)) {
+                        genotype[posOffspring][evol.sexMother[l]] = genotype[posOffspring][evol.sexFather[l]] = (byte) 1;
+                    } else {
+                        genotype[posOffspring][evol.sexMother[l]] = genotype[posOffspring][evol.sexFather[l]] = (byte) 0;
+                    }
                 }
             }
         } else {
