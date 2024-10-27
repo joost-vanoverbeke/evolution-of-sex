@@ -93,7 +93,7 @@ public class EvolSex {
     static void logTitles(PrintWriter out) {
         out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
-                + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;abs_fitness_max;load_mean;load_var;abs_contr_mean;abs_contr_max;rel_contr_mean;rel_contr_max;S_mean;S_var;"
+                + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;abs_fitness_var;abs_fitness_max;load_mean;load_var;abs_contr_mean;abs_contr_var;rel_contr_var;rel_fit_var;S_mean;S_var;"
                 + "residence_distinct;residence_div;distinct_pop;div_pop");
         for (int tr = 0; tr < comm.traits; tr++)
             out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;fitness_mean_tr%d;fitness_var_tr%d;"
@@ -109,9 +109,9 @@ public class EvolSex {
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
-                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
+                            + "%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;"
                             + "%f;%f;%f;%f",
-                            sites.pSex(p), sites.pSexVar(p), sites.pDisp(p), sites.pDispVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.absFitnessMax(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.absContrMean(p), sites.absContrMax(p), sites.relContrMean(p), sites.relContrMax(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
+                            sites.pSex(p), sites.pSexVar(p), sites.pDisp(p), sites.pDispVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.absFitnessVar(p), sites.absFitnessMax(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.absContrMean(p), sites.absContrVar(p), sites.relContrVar(p), sites.relRelFitnessVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
                     sites.residenceDistinctMean(p),sites.residenceDivMean(p),sites.residenceDistinctPop(p),sites.residenceDivPop(p));
             for (int tr = 0; tr < comm.traits; tr++)
                 out.format(";%d;%f;%f;%f;%f;%f;%f;%f;%f;%f",
@@ -366,6 +366,7 @@ class Sites {
                 // fit = fitness[i];
 // regular selection
                 // alive[i] = Auxils.random.nextDouble() < (1 - comm.d) * fit;
+
                 if (Auxils.random.nextDouble() >= (1 - comm.d) * fit)
                     removeInd(i);
 // density dependent selection
@@ -966,45 +967,66 @@ class Sites {
     }
 
     double absContrMean(int p) {
-        double mean = 0;
-        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
-            if (alive[i])
-                mean += fitness[i]*(1 - pSex[i]/2.);
-        mean /= popSize(p);
+        double mean = 0, relFit = 0;
+        int N = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
+            if (alive[i]) {
+                N++;
+                relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                mean += comm.r*(1 - comm.d)*relFit*(1 - pSex[i]*comm.demogrCost[dcPos]);
+            }
+        }
+        mean /= N;
         return mean;
     }
 
-    double absContrMax(int p) {
-        double max = 0, contr = 0;
-        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+    double absContrVar(int p) {
+        double mean = absContrMean(p);
+        double var = 0, relFit = 0, absContr = 0;
+        int N = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
             if (alive[i]) {
-                contr = fitness[i]*(1 - pSex[i]/2.);
-                if (contr > max)
-                    max = contr;
+                N++;
+                relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                absContr = comm.r*(1 - comm.d)*relFit*(1 - pSex[i]*comm.demogrCost[dcPos]);
+                var += Math.pow(mean - absContr, 2);
             }
-        return max;
+        }
+        var /= N;
+        return var;
     }
 
-    double relContrMean(int p) {
-        double mean = 0;
-        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
-            if (alive[i])
-                mean += (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p])*(1 - pSex[i]/2.);
-        mean /= popSize(p);
-        return mean;
-    }
-
-    double relContrMax(int p) {
-        double max = 0, contr = 0;
-        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
+    double relContrVar(int p) {
+        double mean = absContrMean(p);
+        double var = 0, relFit = 0, relContr = 0;
+        int N = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
             if (alive[i]) {
-                contr = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p])*(1 - pSex[i]/2.);
-                if (contr > max)
-                    max = contr;
+                N++;
+                relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                relContr = comm.r*(1 - comm.d)*relFit*(1 - pSex[i]*comm.demogrCost[dcPos])/mean;
+                var += Math.pow(1 - relContr, 2);
             }
-        return max;
+        }
+        var /= N;
+        return var;
     }
 
+    double relRelFitnessVar(int p) {
+        double mean = relFitnessMean(p);
+        double var = 0, relFit = 0, relRelFit = 0;
+        int N = 0;
+        for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
+            if (alive[i]) {
+                N++;
+                relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
+                relRelFit = relFit/mean;
+                var += Math.pow(1 - relRelFit, 2);
+            }
+        }
+        var /= N;
+        return var;
+    }
 
     double residenceDistinctMean(int p) {
         double mean = 0;
