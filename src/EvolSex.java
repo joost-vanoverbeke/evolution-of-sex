@@ -10,10 +10,6 @@ import org.apache.commons.rng.simple.RandomSource;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.Comparator;
-// import org.apache.commons.math3.stat.regression.SimpleRegression;
-// import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-// import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 /* class EvolvingMetacommunity
  * loops over cycles (time steps) of reproduction and dispersal
@@ -43,50 +39,51 @@ public class EvolSex {
             logTitles(streamOut);
 
             for (int r = 0; r < run.runs; r++)
-                for (int dc = 0; dc < comm.demogrCost.length; dc++)
-                    for (int pc = 0; pc < comm.pChange.length; pc++)
-                        for (int es = 0; es < comm.envStep.length; es++)
-                        for (int dr = 0; dr < comm.dispRate.length; dr++) 
-                            for (int ps = 0; ps < comm.pSex.length; ps++) {
-
-                                System.out.format("run = %d; env = %s; sex = %s; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; pChange = %.4f; step = %.4f%n",
-                                        (r + 1), comm.envType, comm.sexType, comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.pChange[pc], comm.envStep[es]);
-
-                                comm.init();
-                                evol.init(comm);
-                                Auxils.init(comm, evol);
-                                Init init = new Init(comm, ps);
-
-                                sites = new Sites(comm, evol, init, dc, es, dr);
-
-                                System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
-                                        0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
-                                logResults(0, streamOut, r, dc, pc, es, dr, ps);
-
-                                for (int t = 0; t < run.timeSteps; t++) {
-                                    if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
-                                        sites.changeEnvironment();
-                                    sites.findMaxFitness();
-                                    sites.mortality();
-                                    sites.disperse();
-                                    sites.contributionAdults();
-                                    sites.reproduction();
-
-                                    if (t == 0 || ((t + 1) % run.printSteps) == 0) {
-                                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
-                                                (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
-//                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
-                                    }
-                                    if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
-                                        sites.findMaxFitness();
-                                        logResults(t+1, streamOut, r, dc, pc, es, dr, ps);
-                                    }
-                                }
-                            }
+            for (int dc = 0; dc < comm.demogrCost.length; dc++)
+            for (int pc = 0; pc < comm.pChange.length; pc++)
+            for (int es = 0; es < comm.envStep.length; es++)
+            for (int dr = 0; dr < comm.dispRate.length; dr++)
+            for (int ps = 0; ps < comm.pSex.length; ps++) {
+                
+                System.out.format("run = %d; env = %s; sex = %s; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; pChange = %.4f; step = %.4f%n",
+                (r + 1), comm.envType, comm.sexType, comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.pChange[pc], comm.envStep[es]);
+                
+                comm.init();
+                evol.init(comm);
+                Auxils.init(comm, evol);
+                Init init = new Init(comm, ps);
+                
+                sites = new Sites(comm, evol, init, dc, es, dr);
+                
+                System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
+                0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
+                logResults(0, streamOut, r, dc, pc, es, dr, ps);
+                
+                for (int t = 0; t < run.timeSteps; t++) {
+                    if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
+                    sites.changeEnvironment();
+                    sites.findMaxFitness();
+                    sites.mortality();
+                    sites.disperse();
+                    sites.contributionAdults();
+                    sites.reproduction();
+                    
+                    if (t == 0 || ((t + 1) % run.printSteps) == 0) {
+                        System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
+                        (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
+                        //                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
+                    }
+                    if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
+                        sites.findMaxFitness();
+                        logResults(t+1, streamOut, r, dc, pc, es, dr, ps);
+                    }
+                }
+            }
 
             long endTime = System.currentTimeMillis();
             System.out.println("EvolMetac took " + (endTime - startTime) +
                     " milliseconds.");
+            streamOut.close();
         }
     }
 
@@ -353,7 +350,7 @@ class Sites {
     }
 
     void mortality() {
-        double fit = 0.; 
+        double fit = 0.;
         // double surv = 0.;
         int p;
 
@@ -394,9 +391,9 @@ class Sites {
         maxN = Auxils.arrayMax(popN);
         
         for (int p = 0; p < comm.nbrPatches; p++) {
-            if (evol.mutationRateDisp == 0) 
+            if (evol.mutationRateDisp == 0)
                 pEmpty[p] = (1. + Math.round(maxN*comm.dispRate[drPos] - popN[p]*comm.dispRate[drPos]))/(double)(comm.microsites - popN[p]);
-            else 
+            else
                 pEmpty[p] = (1. + Math.round(maxDisp - pDispSum[p]))/(double)(comm.microsites - popN[p]);
         }
 
@@ -407,11 +404,11 @@ class Sites {
             if (alive[i]) {
                 if (evol.mutationRateDisp == 0)
                     iDisp = comm.dispRate[drPos];
-                else 
+                else
                     iDisp = pDisp[i];
-            if (Auxils.random.nextDouble() < iDisp) 
-                posDisp[nbrDisp++] = i;
-            } else if (Auxils.random.nextDouble() < pEmpty[patch[i]]) 
+                if (Auxils.random.nextDouble() < iDisp)
+                    posDisp[nbrDisp++] = i;
+            } else if (Auxils.random.nextDouble() < pEmpty[patch[i]])
                 posDisp[nbrDisp++] = i;
         }
 
@@ -419,7 +416,7 @@ class Sites {
             // if (nbrDisp > aliveDisp) {
             //     System.out.println("     disp: " + nbrDisp + ",  alive disp: " + aliveDisp + ",  popsize: " + metapopSize());
             // }
-            int oldPos, newPos;
+            int oldPos, newPos, i2;
             int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
             Auxils.arrayShuffle(dispShuffle);
             byte[] tempGen = Arrays.copyOf(genotype[dispShuffle[0]], 2 * evol.allLoci);
@@ -429,7 +426,7 @@ class Sites {
             for (int i = 1; i < nbrDisp; i++) {
                 oldPos = dispShuffle[i];
                 newPos = dispShuffle[i - 1];
-                int i2 = i+1;
+                i2 = i+1;
                 while(patch[oldPos] == patch[newPos] && i2 < nbrDisp) {
                     dispShuffle[i] = dispShuffle[i2];
                     dispShuffle[i2] = oldPos;
@@ -463,7 +460,7 @@ class Sites {
         Arrays.fill(nbrEmpty, 0);
         Arrays.fill(production, 0.);
 
-        double contr = 0.; 
+        double contr = 0.;
         int p;
 
         // int[] popS = new int[comm.nbrPatches];
@@ -744,21 +741,19 @@ class Sites {
     }
 
     int metapopSize() {
-        // int tot = 0;
+        int tot = Auxils.arraySum(popN);
         // for (int i = 0; i < totSites; i++)
         //     if (alive[i])
         //         tot ++;
-        // return tot;
-        return Auxils.arraySum(popN);
+        return tot;
     }
 
     int popSize(int p) {
-        // int tot = 0;
+        int tot = popN[p];
         // for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
         //     if (alive[i])
         //         tot ++;
-        // return tot;
-        return popN[p];
+        return tot;
     }
 
     double genotypeMean(int t) {
@@ -968,63 +963,55 @@ class Sites {
 
     double absContrMean(int p) {
         double mean = 0, relFit = 0;
-        int N = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
             if (alive[i]) {
-                N++;
                 relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
                 mean += comm.r*(1 - comm.d)*relFit*(1 - pSex[i]*comm.demogrCost[dcPos]);
             }
         }
-        mean /= N;
+        mean /= popSize(p);
         return mean;
     }
 
     double absContrVar(int p) {
         double mean = absContrMean(p);
         double var = 0, relFit = 0, absContr = 0;
-        int N = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
             if (alive[i]) {
-                N++;
                 relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
                 absContr = comm.r*(1 - comm.d)*relFit*(1 - pSex[i]*comm.demogrCost[dcPos]);
                 var += Math.pow(mean - absContr, 2);
             }
         }
-        var /= N;
+        var /= popSize(p);
         return var;
     }
 
     double relContrVar(int p) {
         double mean = absContrMean(p);
         double var = 0, relFit = 0, relContr = 0;
-        int N = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
             if (alive[i]) {
-                N++;
                 relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
                 relContr = comm.r*(1 - comm.d)*relFit*(1 - pSex[i]*comm.demogrCost[dcPos])/mean;
                 var += Math.pow(1 - relContr, 2);
             }
         }
-        var /= N;
+        var /= popSize(p);
         return var;
     }
 
     double relRelFitnessVar(int p) {
         double mean = relFitnessMean(p);
         double var = 0, relFit = 0, relRelFit = 0;
-        int N = 0;
         for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++) {
             if (alive[i]) {
-                N++;
                 relFit = (maxFitness[p] == 0) ? 0 : (fitness[i] / maxFitness[p]);
                 relRelFit = relFit/mean;
                 var += Math.pow(1 - relRelFit, 2);
             }
         }
-        var /= N;
+        var /= popSize(p);
         return var;
     }
 
@@ -1243,23 +1230,21 @@ class Sites {
     }
 
     double pDisp() {
-        // double mean = 0;
+        double mean = Auxils.arraySum(pDispSum)/Auxils.arraySum(popN);
         // for (int i = 0; i < totSites; i++)
         //     if (alive[i])
         //         mean += pDisp[i];
         // mean /= metapopSize();
-        // return mean;
-        return Auxils.arraySum(pDispSum)/Auxils.arraySum(popN);
+        return mean;
     }
 
     double pDisp(int p) {
-        // double mean = 0;
+        double mean = pDispSum[p]/popN[p];
         // for (int i = p * comm.microsites; i < (p + 1) * comm.microsites; i++)
         //     if (alive[i])
         //         mean += pDisp[i];
         // mean /= popSize(p);
-        // return mean;
-        return pDispSum[p]/popN[p];
+        return mean;
     }
 
     double pDispVar(int p) {
@@ -1580,6 +1565,7 @@ class Reader {
                         break;
                 }
             }
+            input.close();
         }
     }
 }
@@ -2020,72 +2006,6 @@ class Auxils {
     static double mod(double x, int y) {
         double result = x % y;
         return result < 0 ? result + y : result;
-    }
-
-    /* Calculates Spearman's rank correlation coefficient, */
-    static Double spearman(double [] X, double [] Y) {
-        /* Error check */
-        if (X == null || Y == null || X.length != Y.length) {
-            return null;
-        }
-
-        /* Create Rank arrays */
-        int [] rankX = getRanks(X);
-        int [] rankY = getRanks(Y);
-
-        /* Apply Spearman's formula */
-        int n = X.length;
-        double numerator = 0;
-        for (int i = 0; i < n; i++) {
-            numerator += Math.pow((rankX[i] - rankY[i]), 2);
-        }
-        numerator *= 6;
-        return 1 - numerator / (n * ((n * n) - 1));
-    }
-
-    /* Returns a new array with ranks. Assumes unique array values. */
-    public static int[] getRanks(double [] array) {
-        int n = array.length;
-
-        /* Create Pair[] and sort by values */
-        Pair [] pair = new Pair[n];
-        for (int i = 0; i < n; i++) {
-            pair[i] = new Pair(i, array[i]);
-        }
-        Arrays.sort(pair, new PairValueComparator());
-
-        /* Create and return ranks[] */
-        int [] ranks = new int[n];
-        int rank = 1;
-        for (Pair p : pair) {
-            ranks[p.index] = rank++;
-        }
-        return ranks;
-    }
-
-    /* A class to store 2 variables */
-    public static class Pair {
-        public final int index;
-        public final double value;
-
-        public Pair(int i, double v) {
-            index = i;
-            value = v;
-        }
-    }
-
-    /* This lets us sort Pairs based on their value field */
-    public static class PairValueComparator implements Comparator<Pair> {
-        @Override
-        public int compare(Pair p1, Pair p2) {
-            if (p1.value < p2.value) {
-                return -1;
-            } else if (p1.value > p2.value) {
-                return 1;
-            } else {
-                return 0;
-            }
-        }
     }
 }
 
