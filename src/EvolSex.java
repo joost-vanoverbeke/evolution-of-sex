@@ -43,7 +43,8 @@ public class EvolSex {
             for (int pc = 0; pc < comm.pChange.length; pc++)
             for (int es = 0; es < comm.envStep.length; es++)
             for (int dr = 0; dr < comm.dispRate.length; dr++)
-            for (int ps = 0; ps < comm.pSex.length; ps++) {
+            for (int ps = 0; ps < comm.pSex.length; ps++)
+            for (int psto = 1; psto < (int) Math.round((comm.pSex_to - comm.pSex_from + comm.pSex_step)/comm.pSex_step); psto++) {
                 
                 System.out.format("run = %d; env = %s; sex = %s; dims = %d; traits = %d; demCorr = %.2f; disp = %.4f; pChange = %.4f; step = %.4f%n",
                 (r + 1), comm.envType, comm.sexType, comm.envDims, comm.traits, comm.demogrCost[dc], comm.dispRate[dr], comm.pChange[pc], comm.envStep[es]);
@@ -54,18 +55,20 @@ public class EvolSex {
                 Init init = new Init(comm, ps);
                 
                 sites = new Sites(comm, evol, init, dc, es, dr);
-                double[] sexSeeds = Auxils.seqArray(0.2, 0.4, 0.2);
-                System.out.println("  probs = " + Arrays.toString(sexSeeds));
+                double pSex_step = psto*comm.pSex_step;
+                double pSex_to = comm.pSex_from + pSex_step;
+                double [] sexSeeds = Auxils.seqArray(comm.pSex_from, pSex_to, pSex_step);
+                System.out.println("  sexseeds = " + Arrays.toString(sexSeeds));
                 sites.seedSex(1, sexSeeds);
                 
                 System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
                 0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
-                logResults(0, streamOut, r, dc, pc, es, dr, ps);
+                logResults(0, streamOut, r, dc, pc, es, dr, ps, pSex_to, pSex_step);
                 
                 for (int t = 0; t < run.timeSteps; t++) {
 
-                    if (((t + 0) % 500) == 0)
-                        sites.seedSex(0.01, sexSeeds);
+                    if (((t + 0) % comm.seedtime) == 0)
+                        sites.seedSex(comm.seedprob, sexSeeds);
 
                     if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
                         sites.changeEnvironment();
@@ -84,7 +87,7 @@ public class EvolSex {
                     }
                     if (t == 0 || ((t + 1) % run.saveSteps) == 0) {
                         sites.findMaxFitness();
-                        logResults(t+1, streamOut, r, dc, pc, es, dr, ps);
+                        logResults(t+1, streamOut, r, dc, pc, es, dr, ps, pSex_to, pSex_step);
                     }
                 }
             }
@@ -97,21 +100,17 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;disp_loci;sigma_z;mu;mu_sex;mu_disp;omega_e;"
+        out.print("env_type;sex_type;p_sex_from;p_sex_to;p_sex_step;seed_time;seed_prob;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;d;r;demogr_cost;traits;trait_loci;sex_loci;disp_loci;sigma_z;mu;mu_sex;mu_disp;omega_e;"
                 + "run;time;patch;N;"
                 + "p_sex_mean;p_sex_var;p_disp_mean;p_disp_var;fitness_mean;fitness_var;abs_fitness_mean;abs_fitness_var;abs_fitness_max;load_mean;load_var;abs_contr_mean;abs_contr_var;rel_contr_var;rel_fit_var;S_mean;S_var;"
                 + "distinct_pop");
-        for (int tr = 0; tr < comm.traits; tr++)
-            out.format(";dim_tr%d;e_dim_tr%d;genotype_mean_tr%d;genotype_var_tr%d;phenotype_mean_tr%d;phenotype_var_tr%d;"
-                            + "genotype_meta_var_tr%d;phenotype_meta_var_tr%d",
-                    tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1, tr + 1);
         out.println("");
     }
 
-    static void logResults(int t, PrintWriter out, int r, int dc, int pc, int es, int dr, int ps) {
+    static void logResults(int t, PrintWriter out, int r, int dc, int pc, int es, int dr, int ps, double ps_to, double ps_step) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%s;%s;%f;%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%d;%f;%f;%f;%f;%f",
-                    comm.envType, comm.sexType, comm.pSex[ps], comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.dispLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.mutationRateDisp, evol.omegaE);
+            out.format("%s;%s;%f;%f;%f;%d;%f;%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%f;%f;%f;%d;%d;%d;%d;%f;%f;%f;%f;%f",
+                    comm.envType, comm.sexType, comm.pSex_from, ps_to, ps_step, comm.seedtime, comm.seedprob, comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sexLoci, evol.dispLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.mutationRateDisp, evol.omegaE);
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
@@ -119,10 +118,6 @@ public class EvolSex {
                             + "%f",
                             sites.pSex(p), sites.pSexVar(p), sites.pDisp(p), sites.pDispVar(p), sites.relFitnessMean(p), sites.relFitnessVar(p), sites.absFitnessMean(p), sites.absFitnessVar(p), sites.absFitnessMax(p), sites.relLoadMean(p), sites.relLoadVar(p), sites.absContrMean(p), sites.absContrVar(p), sites.relContrVar(p), sites.relRelFitnessVar(p), sites.selectionDiff(p), sites.selectionDiffVar(p),
                     sites.residenceDistinctPop(p));
-            for (int tr = 0; tr < comm.traits; tr++)
-                out.format(";%d;%f;%f;%f;%f;%f;%f;%f",
-                        sites.comm.traitDim[tr] + 1, sites.environment[p][sites.comm.traitDim[tr]], sites.genotypeMean(p, tr), sites.genotypeVar(p, tr), sites.phenotypeMean(p, tr), sites.phenotypeVar(p, tr),
-                        sites.genotypeVar(tr), sites.phenotypeVar(tr));
             out.println("");
         }
     }
@@ -1834,6 +1829,11 @@ class Comm {
     // double rho = 1;
     String sexType = "SWITCH";
     double[] pSex = {0.};
+    double pSex_from = 0.;
+    double pSex_to = 1.;
+    double pSex_step = 0.1;
+    int seedtime = 500;
+    double seedprob = 0.01;
 
     int[] traitDim;
 
@@ -2044,6 +2044,21 @@ class Reader {
                         comm.pSex = new double[size];
                         for (int i = 0; i < size; i++)
                             comm.pSex[i] = Double.parseDouble(words[2 + i]);
+                        break;
+                    case "FROMSEX":
+                        comm.pSex_from = Double.parseDouble(words[1]);
+                        break;
+                    case "TOSEX":
+                        comm.pSex_to = Double.parseDouble(words[1]);
+                        break;
+                    case "STEPSEX":
+                        comm.pSex_step = Double.parseDouble(words[1]);
+                        break;
+                    case "SEEDTIME":
+                        comm.seedtime = Integer.parseInt(words[1]);
+                        break;
+                    case "SEEDPROB":
+                        comm.seedprob = Double.parseDouble(words[1]);
                         break;
                     case "COST":
                         size = Integer.parseInt(words[1]);
