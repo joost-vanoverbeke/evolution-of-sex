@@ -54,12 +54,19 @@ public class EvolSex {
                 Init init = new Init(comm, ps);
                 
                 sites = new Sites(comm, evol, init, dc, es, dr);
+                double[] sexSeeds = Auxils.seqArray(0.2, 0.4, 0.2);
+                System.out.println("  probs = " + Arrays.toString(sexSeeds));
+                sites.seedSex(1, sexSeeds);
                 
                 System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f; pDisp = %.5f%n",
                 0, sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex(), sites.pDisp());
                 logResults(0, streamOut, r, dc, pc, es, dr, ps);
                 
                 for (int t = 0; t < run.timeSteps; t++) {
+
+                    if (((t + 0) % 500) == 0)
+                        sites.seedSex(0.01, sexSeeds);
+
                     if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
                         sites.changeEnvironment();
                     // sites.changeEnvironment_pc(pc);
@@ -290,6 +297,29 @@ class Sites {
     double calcFitness(double phenot, double env) {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
+
+    void seedSex(double r, double[] probs) {
+        double pS;
+        for (int p = 0; p < comm.nbrPatches; p++) {
+            for (int i = 0; i < comm.microsites; i++) {
+                if (alive[i] && Auxils.random.nextDouble() <= r) {
+                    // pS = Auxils.arraySample(1, Auxils.enumArray(0, 20))[0]/20.;
+                    // pS = Auxils.arraySample(1, probs)[0];
+                    pS = probs[Auxils.random.nextInt(probs.length)];
+                    for (int l = 0; l < evol.sexLoci; l++) {
+                        if (l < Math.round(pS*evol.sexLoci)) {
+                            genotype[i][evol.sexMother[l]] = genotype[i][evol.sexFather[l]] = (byte) 1;
+                        } else {
+                            genotype[i][evol.sexMother[l]] = genotype[i][evol.sexFather[l]] = (byte) 0;
+                        }
+                    }
+                    pSex[i] = Math.min(1, Math.max(0, Auxils.arrayMean(genotype[i], evol.sexGenes)));
+
+                }
+            }
+        }
+    }
+
 
 //    void changeEnvironment() {
 //        boolean globalEnv = comm.envType.equals("REGIONAL");
@@ -604,6 +634,11 @@ void adjustFitness(int p, int d) {
                     if (sexAdults[m]) {
                         //selfing allowed!
                         f = fathersPos[p][Auxils.randIntCumProb(fathersCumProb[p], endPosFathers[p])];
+
+                        while (pSex[f] != pSex[m]) {
+                            f = fathersPos[p][Auxils.randIntCumProb(fathersCumProb[p], endPosFathers[p])];
+                        }
+
                         settle(posOffspring[i], m, f);
                         //selfing not allowed!
                         // if(endPosFathers[patchMother] > 1) {
@@ -2300,6 +2335,17 @@ class Auxils {
         int[] newArr = new int[to - from + 1];
         for (int i = 0; i < newArr.length; i++)
             newArr[i] = from++;
+        return newArr;
+    }
+
+    static double[] seqArray(double from, double to, double step) {
+        int len = (int) Math.round((to - from + step)/step);
+        // System.out.println("  from = " + from + "; to = " + to + "; step = " + step + "; len = " + len);
+        double[] newArr = new double[len];
+        for (int i = 0; i < newArr.length; i++) {
+            newArr[i] = from;
+            from += step;
+        }
         return newArr;
     }
 

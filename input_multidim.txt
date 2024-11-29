@@ -14,12 +14,12 @@ MICROSITES          2000    										number of microsites in each patch (defaul
 D                   0.05                                      	mortality rate (default = 0.1)
 R                   5
 PSEX 	        1   0.											initial probability of sexual reproduction (default = 0)
-COST			1	1.											demographic cost of sexual reproduction (default = 0.5)
+COST			1	0.5											demographic cost of sexual reproduction (default = 0.5)
 GRIDSIZE            1                                        	number of patches = gridsize^2 (default = 2)
 // ENVTYPE				REGIONAL
 ENVTYPE				LOCAL
 PCHANGE		    1   0.1											probability of environmental change along each niche dimension (default = 0.1)
-ENVSTEP		    6   0.01 0.015 0.025 0.04 0.065 0.1										    step size of environmental change (default = 0.01)
+ENVSTEP		    3   0.015 0.04 0.1										    step size of environmental change (default = 0.01)
 M               1   0.	                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
 
 evolution parameters
@@ -31,8 +31,8 @@ MU                  1e-4                                     	mutation rate (def
 // MUSEX               1e-5                                    	mutation rate (default = 1e-4)
 SEXTYPE             FACULTATIVE
 SEXLOCI		        20                                          number of diploid loci coding the probability of sex (default = 10)
-MUSEX               1e-4                                    	mutation rate (default = 1e-4)
-// MUSEX               0.                                    	mutation rate (default = 1e-4)
+// MUSEX               1e-4                                    	mutation rate (default = 1e-4)
+MUSEX               0.                                    	mutation rate (default = 1e-4)
 DISPLOCI            20
 // MUDISP              1e-4
 MUDISP              0.
@@ -40,8 +40,8 @@ SIGMAZ              0.01                                     	phenotypic standar
 
 
 run parameters
-RUNS                25                                        	number of replicate runs (default = 1)
-TIMESTEPS           100000                                  	number of time steps in a run (default = 10000)
-PRINTSTEPS          10000		                               	time steps between console output (default = 100)
-SAVESTEPS           2000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_test_nocost_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+RUNS                10                                        	number of replicate runs (default = 1)
+TIMESTEPS           50000                                  	number of time steps in a run (default = 10000)
+PRINTSTEPS          5000		                               	time steps between console output (default = 100)
+SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
+OUTPUT              results_test_assort_reseed500_0.1_K2e3_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
