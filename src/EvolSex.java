@@ -54,7 +54,7 @@ public class EvolSex {
                 Init init = new Init(comm, ps);
                 
                 sites = new Sites(comm, evol, init, dc, es, dr);
-                double[] sexSeeds = Auxils.seqArray(0.2, 0.4, 0.2);
+                double[] sexSeeds = Auxils.seqArray(0., 1., 0.05);
                 System.out.println("  probs = " + Arrays.toString(sexSeeds));
                 sites.seedSex(1, sexSeeds);
                 
@@ -65,7 +65,7 @@ public class EvolSex {
                 for (int t = 0; t < run.timeSteps; t++) {
 
                     if (((t + 0) % 500) == 0)
-                        sites.seedSex(0.01, sexSeeds);
+                        sites.seedSex(0.1, sexSeeds);
 
                     if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
                         sites.changeEnvironment();
@@ -300,8 +300,10 @@ class Sites {
 
     void seedSex(double r, double[] probs) {
         double pS;
-        for (int p = 0; p < comm.nbrPatches; p++) {
-            for (int i = 0; i < comm.microsites; i++) {
+        // for (int p = 0; p < comm.nbrPatches; p++) {
+            for (int i = 0; i < totSites; i++) {
+
+            // for (int i = 0; i < comm.microsites; i++) {
                 if (alive[i] && Auxils.random.nextDouble() <= r) {
                     // pS = Auxils.arraySample(1, Auxils.enumArray(0, 20))[0]/20.;
                     // pS = Auxils.arraySample(1, probs)[0];
@@ -317,7 +319,7 @@ class Sites {
 
                 }
             }
-        }
+        // }
     }
 
 
