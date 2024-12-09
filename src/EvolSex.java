@@ -222,9 +222,14 @@ class Sites {
         mothersProb = new double[comm.nbrPatches][comm.microsites];
         mothersCumProb = new double[comm.nbrPatches][comm.microsites];
 
-        endPosFathers = new int[comm.nbrPatches][101];
-        fathersPos = new int[comm.nbrPatches][101][comm.microsites];
-
+        if (comm.sexType.equals("SWITCH")) {
+            endPosFathers = new int[comm.nbrPatches][1];
+            fathersPos = new int[comm.nbrPatches][1][comm.microsites];
+        } else {
+            endPosFathers = new int[comm.nbrPatches][20];
+            fathersPos = new int[comm.nbrPatches][20][comm.microsites];
+        }
+        
         double indGtp;
         Arrays.fill(maxFitness, 0.);
 
@@ -454,16 +459,18 @@ void adjustFitness(int p, int d) {
 
         for (int i = 0; i < totSites; i++) {
             if (alive[i]) {
-                if (Auxils.random.nextDouble() < comm.dispRate[drPos])
+                if (Auxils.random.nextDouble() < comm.dispRate[drPos]) {
                     posDisp[nbrDisp++] = i;
-            } else if (Auxils.random.nextDouble() < pEmpty[patch[i]])
+                }
+            } else if (Auxils.random.nextDouble() < pEmpty[patch[i]]) {
                 posDisp[nbrDisp++] = i;
+            }
         }
 
         if(nbrDisp > 0) {
-            // if (nbrDisp > aliveDisp) {
-            //     System.out.println("     disp: " + nbrDisp + ",  alive disp: " + aliveDisp + ",  popsize: " + metapopSize());
-            // }
+
+            // System.out.println("     disp: " + nbrDisp + ",  popsize: " + metapopSize());
+
             int oldPos, newPos, i2;
             // int[] dispShuffle = Arrays.copyOf(posDisp, nbrDisp);
             int[] dispShuffle = new int[nbrDisp];
@@ -473,6 +480,7 @@ void adjustFitness(int p, int d) {
             byte[] tempGen = new byte[2 * evol.allLoci];
             System.arraycopy(genotype[dispShuffle[0]], 0, tempGen, 0, 2 * evol.allLoci);
             boolean tempAlive = alive[dispShuffle[0]];
+            double tempSex = pSex[dispShuffle[0]];
             if (tempAlive)
                 removeInd(dispShuffle[0]);
             for (int i = 1; i < nbrDisp; i++) {
@@ -489,7 +497,11 @@ void adjustFitness(int p, int d) {
                 // System.out.println("     old patch = " + patch[oldPos] + "; old pos = " + oldPos);
                 // System.out.println("     new patch = " + patch[newPos] + "; new pos = " + newPos);
                 if (alive[oldPos]) {
+
+                    // System.out.println("  yesss");
+
                     System.arraycopy(genotype[oldPos], 0, genotype[newPos], 0, 2 * evol.allLoci);
+                    pSex[newPos] = pSex[oldPos];
                     settleRest(newPos, oldPos);
                     removeInd(oldPos);
                 } else {
@@ -499,6 +511,7 @@ void adjustFitness(int p, int d) {
             newPos = dispShuffle[nbrDisp - 1];
             if (tempAlive) {
                 System.arraycopy(tempGen, 0, genotype[newPos], 0, 2 * evol.allLoci);
+                pSex[newPos] = tempSex;
                 settleRest(newPos, dispShuffle[0]);
             } else {
                 alive[newPos] = false;
@@ -524,9 +537,13 @@ void adjustFitness(int p, int d) {
                 contr = 1;
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
                 if (sexAdults[i]) {
-                    sexPos = (int) Math.round(pSex[i]*100);
+                    if (comm.sexType.equals("SWITCH")) {
+                        sexPos = 0;
+                    } else {
+                        sexPos = (int) Math.round(pSex[i]*100)/5 - 1;
+                    }
                     fathersPos[p][sexPos][endPosFathers[p][sexPos]++] = i;
-                    contr *= comm.demogrCost[dcPos];
+                        contr *= comm.demogrCost[dcPos];
                 }
                 mothersPos[p][endPosMothers[p]] = i;
                 mothersProb[p][endPosMothers[p]++] = contr;
@@ -565,7 +582,12 @@ void adjustFitness(int p, int d) {
                     if (sexAdults[m]) {
                         //selfing allowed!
 
-                        sexPos = (int) Math.round(pSex[m]*100);
+                        if (comm.sexType.equals("SWITCH")) {
+                            sexPos = 0;
+                        } else {
+                            sexPos = (int) Math.round(pSex[m]*100)/5 - 1;
+                        }
+                
                         f = fathersPos[p][sexPos][Auxils.random.nextInt(endPosFathers[p][sexPos])];
 
                         // f = fathersPos[p][Auxils.random.nextInt(endPosFathers[p])];
@@ -673,11 +695,18 @@ void adjustFitness(int p, int d) {
         }
 
         double pS;
-        if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
-            pS = pSex[posOffspring] + (Auxils.random.nextBoolean() ? -1 : 1)*0.05;
-            pS = Math.round(pS*100)/100.;
-            pS = Math.max(Math.min(pS, 1.), 0.);
-            pSex[posOffspring] = pS;
+        if (comm.sexType.equals("SWITCH")) {
+            if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
+                pSex[posOffspring] = (pSex[posOffspring] == 0.) ? 1. : 0.;
+            }
+        } else {
+            if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
+                pS = pSex[posOffspring] + (Auxils.random.nextBoolean() ? -1 : 1)*0.05;
+                // pS = Auxils.random.nextInt(21)*0.05;
+                pS = Math.round(pS*100)/100.;
+                pS = Math.max(Math.min(pS, 1.), 0.);
+                pSex[posOffspring] = pS;
+            }
         }
     }
 
