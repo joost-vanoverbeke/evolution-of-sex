@@ -27,9 +27,9 @@ OMEGAE              0.25                                     	niche tolerance (d
 TRAITLOCI           320                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
 MU                  1e-4                                     	mutation rate (default = 1e-4)
 // SEXTYPE             SWITCH
-// MUSEX               1e-3                                    	mutation rate (default = 1e-4)
+// MUSEX               1e-5                                    	mutation rate (default = 1e-4)
 SEXTYPE             FACULTATIVE
-MUSEX               1e-3                                    	mutation rate (default = 1e-4)
+MUSEX               1e-2                                    	mutation rate (default = 1e-4)
 // MUSEX               0.                                    	mutation rate (default = 1e-4)
 SIGMAZ              0.01                                     	phenotypic standard deviation (default = 0.01)
 
@@ -39,4 +39,4 @@ RUNS                25                                        	number of replica
 TIMESTEPS           100000                                  	number of time steps in a run (default = 10000)
 PRINTSTEPS          10000		                               	time steps between console output (default = 100)
 SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_assort_fac2_test_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+OUTPUT              results_assort_antifit_fac_muts1e-2_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)

@@ -701,8 +701,8 @@ void adjustFitness(int p, int d) {
             }
         } else {
             if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
-                pS = pSex[posOffspring] + (Auxils.random.nextBoolean() ? -1 : 1)*0.05;
-                // pS = Auxils.random.nextInt(21)*0.05;
+                // pS = pSex[posOffspring] + (Auxils.random.nextBoolean() ? -1 : 1)*0.05;
+                pS = Auxils.random.nextInt(21)*0.05;
                 pS = Math.round(pS*100)/100.;
                 pS = Math.max(Math.min(pS, 1.), 0.);
                 pSex[posOffspring] = pS;
