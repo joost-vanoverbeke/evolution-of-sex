@@ -265,6 +265,10 @@ class Sites {
         return Auxils.arrayMean(genotype[i], evol.traitGenes[tr]) + (Auxils.gaussianSampler.sample() * evol.sigmaZ);
     }
 
+    double calcSimplePhenotype(int i, int tr) {
+        return Math.round(traitPhenotype[i][tr]/0.05)*0.05;
+    }
+
     double calcFitness(double phenot, double env) {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
