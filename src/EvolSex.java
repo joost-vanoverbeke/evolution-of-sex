@@ -1804,7 +1804,7 @@ class Auxils {
     }
     
     static double arrayMean(byte[] array, int[] pos) {
-        byte sum = 0;
+        int sum = 0;
         double mean = 0;
         for (int i : pos) sum += array[i];
         mean = ((double) sum)/pos.length;
