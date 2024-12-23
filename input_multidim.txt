@@ -27,11 +27,13 @@ evolution parameters
 OMEGAE              0.25                                     	niche tolerance (default = 0.02)
 TRAITLOCI           320                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
 MU                  1e-4                                     	mutation rate (default = 1e-4)
-SEXTYPE             SWITCH
-MUSEX               1e-5                                    	mutation rate (default = 1e-4)
+// SEXTYPE             SWITCH
+// SEXLOCI		       1                                          number of diploid loci coding the probability of sex (default = 10)
+// MUSEX               1e-5                                    	mutation rate (default = 1e-4)
 // MUSEX               0.                                    	mutation rate (default = 1e-4)
-// SEXTYPE             FACULTATIVE
-// MUSEX               1e-2                                    	mutation rate (default = 1e-4)
+SEXTYPE             FACULTATIVE
+SEXLOCI		        20                                          number of diploid loci coding the probability of sex (default = 10)
+MUSEX               1e-2                                    	mutation rate (default = 1e-4)
 // MUSEX               0.                                    	mutation rate (default = 1e-4)
 
 SIGMAE              0.01
@@ -39,7 +41,7 @@ SIGMAZ              0.01                                     	phenotypic standar
 
 
 run parameters
-RUNS                5                                        	number of replicate runs (default = 1)
+RUNS                10                                        	number of replicate runs (default = 1)
 TIMESTEPS           100000                                  	number of time steps in a run (default = 10000)
 PRINTSTEPS          10000		                               	time steps between console output (default = 100)
 SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
