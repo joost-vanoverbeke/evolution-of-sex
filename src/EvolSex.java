@@ -254,24 +254,8 @@ class Sites {
                     traitFitness[m][tr] = 1;
                     indGtp = init.genotype[p][tr];
                     for (int l : evol.traitGenes[tr]) {
-                        genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 2.5*evol.omegaE * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
+                        genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 2*evol.omegaE * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
                         migrationGenotype[m][l] = 0;
-                    }
-                    if (comm.sexType.equals("SWITCH")) {
-                        for (int l : evol.sexGenes) {
-                            genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
-                        }
-                    } else {
-                        // for (int l : evol.sexGenes) {
-                        //     genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
-                        // }
-                        for (int l = 0; l < evol.sexLoci; l++) {
-                            if (l < Math.round(init.pSex*evol.sexLoci)) {
-                                genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 1;
-                            } else {
-                                genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 0;
-                            }
-                        }
                     }
 
                     traitGenotype[m][tr] = calcGenotype(m, tr);
@@ -280,9 +264,25 @@ class Sites {
                     traitFitness[m][tr] = calcFitness(m, tr);
                     fitness[m] *= traitFitness[m][tr];
                 }
+                if (comm.sexType.equals("SWITCH")) {
+                    for (int l : evol.sexGenes) {
+                        genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
+                    }
+                } else {
+                    // for (int l : evol.sexGenes) {
+                    //     genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                    // }
+                    for (int l = 0; l < evol.sexLoci; l++) {
+                        if (l < Math.round(init.pSex*evol.sexLoci)) {
+                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 1;
+                        } else {
+                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 0;
+                        }
+                    }
+                }
                 if (maxFitness[p] < fitness[m])
                     maxFitness[p] = fitness[m];
-                    pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(genotype[m], evol.sexGenes)));
+                pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(genotype[m], evol.sexGenes)));
             }
         }
     }
@@ -302,6 +302,22 @@ class Sites {
         return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
     }
 
+    double calcPSex(int i) {
+        double ps = 0;
+
+        // System.out.println("ind " + i + "; gto = " + Arrays.toString(Auxils.arrayElements(genotype[i], evol.sexGenes)));
+
+        ps = Auxils.arrayMean(genotype[i], evol.sexGenes);
+
+        // System.out.println("ind " + i + "; ps = " + ps);
+
+        ps = Math.min(1, Math.max(0, ps));
+        // ps = Math.exp(ps)/(Math.exp(ps) + 1.);
+
+        // System.out.println("ind " + i + "; ps = " + ps);
+
+        return ps;
+    }
 
 //    void changeEnvironment() {
 //        boolean globalEnv = comm.envType.equals("REGIONAL");
@@ -708,6 +724,7 @@ void adjustFitness(int p, int d) {
                     l = evol.shuffleSex[index];
                     evol.shuffleSex[index] = evol.shuffleSex[i];
                     evol.shuffleSex[i] = l;
+                    // genotype[posOffspring][evol.sexGenes[l]] += (Auxils.random.nextBoolean() ? -5 : 5);
                     if (pSexTemp <= 0.) {
                         genotype[posOffspring][evol.sexGenes[l]] += 1;
                         pSexTemp += 1./evol.sexGenes.length;
@@ -1860,7 +1877,7 @@ class Auxils {
     }
     
     static double arrayMean(byte[] array, int[] pos) {
-        byte sum = 0;
+        int sum = 0;
         double mean = 0;
         for (int i : pos) sum += array[i];
         mean = ((double) sum)/pos.length;
