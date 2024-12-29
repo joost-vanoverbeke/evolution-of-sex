@@ -45,4 +45,4 @@ RUNS                2                                        	number of replicat
 TIMESTEPS           100000                                  	number of time steps in a run (default = 10000)
 PRINTSTEPS          10000		                               	time steps between console output (default = 100)
 SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_reprsoft_fac_range4_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+OUTPUT              results2_reprsoft_fac_range4_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)

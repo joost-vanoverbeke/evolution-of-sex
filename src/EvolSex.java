@@ -270,7 +270,8 @@ class Sites {
                     }
                 } else {
                     // for (int l : evol.sexGenes) {
-                    //     genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * 0.5 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                    //     // genotype[m][l] = (byte) Math.round(1 * (Auxils.random.nextBoolean() ? -1 : 1) + init.pSex);
+                    //     genotype[m][l] = (byte) init.pSex;
                     // }
                     for (int l = 0; l < evol.sexLoci; l++) {
                         if (l < Math.round(init.pSex*evol.sexLoci)) {
@@ -282,7 +283,7 @@ class Sites {
                 }
                 if (maxFitness[p] < fitness[m])
                     maxFitness[p] = fitness[m];
-                pSex[m] = Math.min(1, Math.max(0, Auxils.arrayMean(genotype[m], evol.sexGenes)));
+                pSex[m] = calcPSex(m);
             }
         }
     }
@@ -304,18 +305,9 @@ class Sites {
 
     double calcPSex(int i) {
         double ps = 0;
-
-        // System.out.println("ind " + i + "; gto = " + Arrays.toString(Auxils.arrayElements(genotype[i], evol.sexGenes)));
-
         ps = Auxils.arrayMean(genotype[i], evol.sexGenes);
-
-        // System.out.println("ind " + i + "; ps = " + ps);
-
         ps = Math.min(1, Math.max(0, ps));
         // ps = Math.exp(ps)/(Math.exp(ps) + 1.);
-
-        // System.out.println("ind " + i + "; ps = " + ps);
-
         return ps;
     }
 
@@ -548,7 +540,7 @@ void adjustFitness(int p, int d) {
             p = patch[i];
             if (alive[i]) {
                 // soft selection
-                            fit = (fitness[i] / maxFitness[p]);
+                fit = (fitness[i] / maxFitness[p]);
                 // hard selection
                 // fit = fitness[i];
                 contr = 1;
@@ -645,7 +637,7 @@ void adjustFitness(int p, int d) {
             traitFitness[pos][tr] = calcFitness(pos, tr);
             fitness[pos] *= traitFitness[pos][tr];
         }
-        pSex[pos] = Math.min(1, Math.max(0, Auxils.arrayMean(genotype[pos], evol.sexGenes)));
+        pSex[pos] = calcPSex(pos);
     }
 
     void removeInd (int pos) {
@@ -724,7 +716,7 @@ void adjustFitness(int p, int d) {
                     l = evol.shuffleSex[index];
                     evol.shuffleSex[index] = evol.shuffleSex[i];
                     evol.shuffleSex[i] = l;
-                    // genotype[posOffspring][evol.sexGenes[l]] += (Auxils.random.nextBoolean() ? -5 : 5);
+                    // genotype[posOffspring][evol.sexGenes[l]] += evol.sexStep * (Auxils.random.nextBoolean() ? -1 : 1);
                     if (pSexTemp <= 0.) {
                         genotype[posOffspring][evol.sexGenes[l]] += 1;
                         pSexTemp += 1./evol.sexGenes.length;
@@ -1418,6 +1410,7 @@ class Init {
             }
         }
         pSex = comm.pSex[ps];
+        // pSex = Math.log(comm.pSex[ps]/(1. - comm.pSex[ps]));
     }
 }
 
