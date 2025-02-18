@@ -102,7 +102,7 @@ public class EvolSex {
     }
 
     static void logTitles(PrintWriter out) {
-        out.print("env_type;sex_type;init_p_sex;grid_size;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;K;d;r;demogr_cost;traits;trait_loci;sigma_z;mu;mu_sex;omega_e;"
+        out.print("env_type;sex_type;init_p_sex;patches;p_e_change;e_step;min_env;max_env;m;dims;sigma_e;microsites;K;d;r;demogr_cost;traits;trait_loci;sigma_z;mu;mu_sex;omega_e;"
                 + "run;time;patch;N;"
                 + "p_sex_mean;p_sex_var;fitness_mean;fitness_var;abs_fitness_mean;abs_fitness_var;abs_fitness_max;load_mean;load_var;abs_contr_mean;abs_contr_var;rel_contr_var;rel_fit_var;S_mean;S_var;"
                 + "distinct_pop");
@@ -115,8 +115,8 @@ public class EvolSex {
 
     static void logResults(int t, PrintWriter out, int r, int dc, int pc, int es, int dr, int ps) {
         for (int p = 0; p < comm.nbrPatches; p++) {
-            out.format("%s;%s;%f;%d;%d;%f;%f;%f;%f;%f;%d;%f;%d;%d;%f;%f;%f;%d;%d;%f;%f;%f;%f",
-                    comm.envType, comm.sexType, comm.pSex[ps], comm.gridSize, comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.K, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
+            out.format("%s;%s;%f;%d;%f;%f;%f;%f;%f;%d;%f;%d;%d;%f;%f;%f;%d;%d;%f;%f;%f;%f",
+                    comm.envType, comm.sexType, comm.pSex[ps], comm.nbrPatches, comm.pChange[pc], comm.envStep[es], comm.minEnv, comm.maxEnv, comm.dispRate[dr], comm.envDims, comm.sigmaE, comm.microsites, comm.K, comm.d, comm.r, comm.demogrCost[dc], comm.traits, evol.traitLoci, evol.sigmaZ, evol.mutationRate, evol.mutationRateSex, evol.omegaE);
             out.format(";%d;%d;%d;%d",
                     r + 1, t, p + 1, sites.popSize(p));
             out.format(";"
@@ -155,7 +155,7 @@ class Sites {
     double[] fitness;
     double[] pSex;
 
-    byte[][] genotype;
+    short[][] genotype;
     int[][] migrationGenotype;
     int[] migrationCounter;
 
@@ -203,7 +203,7 @@ class Sites {
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
 
-        genotype = new byte[totSites][2 * evol.allLoci];
+        genotype = new short[totSites][2 * evol.allLoci];
         migrationGenotype = new int[totSites][2 * evol.allLoci];
         migrationCounter = new int[comm.nbrPatches];
         Arrays.fill(migrationCounter, 1);
@@ -255,7 +255,7 @@ class Sites {
                     indGtp = init.genotype[p][tr];
                     for (int l : evol.traitGenes[tr]) {
                         // genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * evol.omegaE * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
-                        genotype[m][l] = (byte) Math.round(Auxils.gaussianSampler.sample() * evol.omegaE + indGtp);
+                        genotype[m][l] = (short) Math.round(Auxils.gaussianSampler.sample() * evol.omegaE + indGtp);
                         migrationGenotype[m][l] = 0;
                     }
 
@@ -267,7 +267,7 @@ class Sites {
                 }
                 if (comm.sexType.equals("SWITCH")) {
                     for (int l : evol.sexGenes) {
-                        genotype[m][l] = (byte) ((init.pSex < 0.5) ? 0 : 1);
+                        genotype[m][l] = (short) ((init.pSex < 0.5) ? 0 : 1);
                     }
                 } else {
                     // for (int l : evol.sexGenes) {
@@ -276,9 +276,9 @@ class Sites {
                     // }
                     for (int l = 0; l < evol.sexLoci; l++) {
                         if (l < Math.round(init.pSex*evol.sexLoci)) {
-                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 1;
+                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (short) 1;
                         } else {
-                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (byte) 0;
+                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (short) 0;
                         }
                     }
                 }
@@ -489,7 +489,7 @@ void adjustFitness(int p, int d) {
             int[] dispShuffle = new int[nbrDisp];
             System.arraycopy(posDisp, 0, dispShuffle, 0, nbrDisp);
             Auxils.arrayShuffle(dispShuffle);
-            byte[] tempGen = new byte[2 * evol.allLoci];
+            short[] tempGen = new short[2 * evol.allLoci];
             System.arraycopy(genotype[dispShuffle[0]], 0, tempGen, 0, 2 * evol.allLoci);
             boolean tempAlive = alive[dispShuffle[0]];
             if (tempAlive)
@@ -543,9 +543,9 @@ void adjustFitness(int p, int d) {
             p = patch[i];
             if (alive[i]) {
                 // hard selection
-                // fit = fitness[i];
+                fit = fitness[i];
                 // soft selection
-                fit = (fitness[i] / maxFitness[p]);
+                // fit = (fitness[i] / maxFitness[p]);
                 // contr = 1;
                 // contr *= fit;
                 // contr = Math.max(0, 1 - popN[p]/(fitness[i]*comm.microsites));
@@ -721,7 +721,7 @@ void adjustFitness(int p, int d) {
         if (comm.sexType.equals("SWITCH")) {
             if (Auxils.random.nextDouble() <= evol.mutationRateSex) {
                 for (int i : evol.sexGenes) {
-                    genotype[posOffspring][i] = (byte) ((genotype[posOffspring][i] == 0) ? 1 : 0);
+                    genotype[posOffspring][i] = (short) ((genotype[posOffspring][i] == 0) ? 1 : 0);
                 }
             }
         } else {
@@ -1267,8 +1267,9 @@ class Comm {
     double d = 0.05;
     double[] demogrCost = {0.5};
 
-    int gridSize = 2;
-    int nbrPatches = gridSize * gridSize;
+    // int gridSize = 2;
+    // int nbrPatches = gridSize * gridSize;
+    int nbrPatches = 5;
     double[] pChange = {0.1};
     double[] envStep = {0.01};
     double[] dispRate = {0.01};
@@ -1280,7 +1281,7 @@ class Comm {
 
     void init() {
 
-        nbrPatches = gridSize * gridSize;
+        // nbrPatches = gridSize * gridSize;
 
         traitDim = new int[traits];
         int dim = 0;
@@ -1482,8 +1483,11 @@ class Reader {
                         for (int i = 0; i < size; i++)
                             comm.demogrCost[i] = Double.parseDouble(words[2 + i]);
                         break;
-                    case "GRIDSIZE":
-                        comm.gridSize = Integer.parseInt(words[1]);
+                        // case "GRIDSIZE":
+                        // comm.gridSize = Integer.parseInt(words[1]);
+                        // break;
+                        case "PATCHES":
+                        comm.nbrPatches = Integer.parseInt(words[1]);
                         break;
                     case "ENVTYPE":
                         comm.envType = words[1];
@@ -1797,6 +1801,13 @@ class Auxils {
         return newArr;
     }
 
+    static short[] arrayElements(short[] array, int[] pos) {
+        short[] newArr = new short[pos.length];
+        for (int i = 0; i < newArr.length; i++)
+            newArr[i] = array[pos[i]];
+        return newArr;
+    }
+
     static boolean[] arrayElements(boolean[] array, int[] pos) {
         boolean[] newArr = new boolean[pos.length];
         for (int i = 0; i < newArr.length; i++)
@@ -1838,6 +1849,13 @@ class Auxils {
         return mean;
     }
 
+    static double arrayMean(short[] array) {
+        double mean = 0;
+        for (short value : array) mean += value;
+        mean /= array.length;
+        return mean;
+    }
+
     static double arrayMean(boolean[] array) {
         double mean = 0;
         for (boolean b : array)
@@ -1855,6 +1873,14 @@ class Auxils {
     }
 
     static double arrayMean(int[] array, int end) {
+        double mean = 0;
+        for (int i = 0; i < end; i++)
+            mean += array[i];
+        mean /= end;
+        return mean;
+    }
+
+    static double arrayMean(short[] array, int end) {
         double mean = 0;
         for (int i = 0; i < end; i++)
             mean += array[i];
@@ -1888,6 +1914,14 @@ class Auxils {
     }
     
     static double arrayMean(byte[] array, int[] pos) {
+        int sum = 0;
+        double mean = 0;
+        for (int i : pos) sum += array[i];
+        mean = ((double) sum)/pos.length;
+        return mean;
+    }
+
+    static double arrayMean(short[] array, int[] pos) {
         int sum = 0;
         double mean = 0;
         for (int i : pos) sum += array[i];
