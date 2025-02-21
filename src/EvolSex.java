@@ -72,9 +72,9 @@ public class EvolSex {
                     //     sites.seedSex2(0.05);
                     
                     if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
-                    sites.changeEnvironment();
+                    // sites.changeEnvironment();
                     // sites.changeEnvironment_pc(pc);
-                    // sites.changeEnvironment_norm(pc);
+                    sites.changeEnvironment_norm(pc);
                     sites.findMaxFitness();
                     sites.mortality();
                     sites.disperse();
@@ -155,7 +155,7 @@ class Sites {
     double[] fitness;
     double[] pSex;
 
-    short[][] genotype;
+    double[][] genotype;
     int[][] migrationGenotype;
     int[] migrationCounter;
 
@@ -203,7 +203,7 @@ class Sites {
         traitFitness = new double[totSites][comm.traits];
         fitness = new double[totSites];
 
-        genotype = new short[totSites][2 * evol.allLoci];
+        genotype = new double[totSites][2 * evol.allLoci];
         migrationGenotype = new int[totSites][2 * evol.allLoci];
         migrationCounter = new int[comm.nbrPatches];
         Arrays.fill(migrationCounter, 1);
@@ -255,7 +255,7 @@ class Sites {
                     indGtp = init.genotype[p][tr];
                     for (int l : evol.traitGenes[tr]) {
                         // genotype[m][l] = (byte) Math.round(Auxils.random.nextDouble() * evol.omegaE * (Auxils.random.nextBoolean() ? -1 : 1) + indGtp);
-                        genotype[m][l] = (short) Math.round(Auxils.gaussianSampler.sample() * evol.omegaE + indGtp);
+                        genotype[m][l] = Auxils.gaussianSampler.sample() * evol.omegaE + indGtp;
                         migrationGenotype[m][l] = 0;
                     }
 
@@ -267,7 +267,7 @@ class Sites {
                 }
                 if (comm.sexType.equals("SWITCH")) {
                     for (int l : evol.sexGenes) {
-                        genotype[m][l] = (short) ((init.pSex < 0.5) ? 0 : 1);
+                        genotype[m][l] = ((init.pSex < 0.5) ? 0 : 1);
                     }
                 } else {
                     // for (int l : evol.sexGenes) {
@@ -276,9 +276,9 @@ class Sites {
                     // }
                     for (int l = 0; l < evol.sexLoci; l++) {
                         if (l < Math.round(init.pSex*evol.sexLoci)) {
-                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (short) 1;
+                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = 1;
                         } else {
-                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = (short) 0;
+                            genotype[m][evol.sexMother[l]] = genotype[m][evol.sexFather[l]] = 0;
                         }
                     }
                 }
@@ -489,7 +489,7 @@ void adjustFitness(int p, int d) {
             int[] dispShuffle = new int[nbrDisp];
             System.arraycopy(posDisp, 0, dispShuffle, 0, nbrDisp);
             Auxils.arrayShuffle(dispShuffle);
-            short[] tempGen = new short[2 * evol.allLoci];
+            double[] tempGen = new double[2 * evol.allLoci];
             System.arraycopy(genotype[dispShuffle[0]], 0, tempGen, 0, 2 * evol.allLoci);
             boolean tempAlive = alive[dispShuffle[0]];
             if (tempAlive)
@@ -714,7 +714,8 @@ void adjustFitness(int p, int d) {
                 l = evol.shuffleTrait[index];
                 evol.shuffleTrait[index] = evol.shuffleTrait[i];
                 evol.shuffleTrait[i] = l;
-                genotype[posOffspring][evol.somGenes[l]] += (Auxils.random.nextBoolean() ? -1 : 1);
+                // genotype[posOffspring][evol.somGenes[l]] += (Auxils.random.nextBoolean() ? -1 : 1);
+                genotype[posOffspring][evol.somGenes[l]] += Auxils.gaussianSampler.sample();
             }
         }
 

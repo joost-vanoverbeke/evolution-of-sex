@@ -8,23 +8,23 @@ non initialized parameters receive a default value
 ecological parameters
 ENVDIMS		        16											number of niche dimensions (default = 1)
 TRAITS		        16											number of traits (default = 2)
-MINENV              -0.5                                      	minimum environmental value (between 0 and 1) (default = 0.2)
-MAXENV              0.5                                      	maximum environmental value (between 0 and 1) (default = 0.8)
-MICROSITES          750    										number of microsites in each patch (default = 600)
-K                   500
+MINENV              -2                                      	minimum environmental value (between 0 and 1) (default = 0.2)
+MAXENV              2                                      	maximum environmental value (between 0 and 1) (default = 0.8)
+MICROSITES          1500    										number of microsites in each patch (default = 600)
+K                   1000
 D                   0.1                                      	mortality rate (default = 0.1)
 R                   5
 PSEX 	        1   0.											initial probability of sexual reproduction (default = 0)
 COST			1	0.5											demographic cost of sexual reproduction (default = 0.5)
 PATCHES             20                                        	number of patches = gridsize^2 (default = 2)
-ENVTYPE				REGIONAL
-// ENVTYPE				LOCAL
+// ENVTYPE				REGIONAL
+ENVTYPE				LOCAL
 PCHANGE		    1   0.1										probability of environmental change along each niche dimension (default = 0.1)
-ENVSTEP		    1   0.05									    step size of environmental change (default = 0.01)
+ENVSTEP		    1   0.1									    step size of environmental change (default = 0.01)
 M               1   2e-3	                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
 
 evolution parameters
-OMEGAE              0.3                                     	niche tolerance (default = 0.02)
+OMEGAE              0.5                                     	niche tolerance (default = 0.02)
 TRAITLOCI           320                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
 MU                  1e-4                                     	mutation rate (default = 1e-4)
 SEXTYPE             SWITCH
@@ -45,4 +45,4 @@ RUNS                10                                        	number of replica
 TIMESTEPS           100000                                  	number of time steps in a run (default = 10000)
 PRINTSTEPS          10000		                               	time steps between console output (default = 100)
 SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_reprhard_regional_OE3_r5_step0.05_range1_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+OUTPUT              results_test_normal_1_normenv_OE5_range4_local_dim16_K1000.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
