@@ -437,8 +437,8 @@ void adjustFitness(int p, int d) {
     }
 
     void mortality() {
-        // double fit = 0.;
-        // int p;
+        double fit = 0.;
+        int p;
 
         System.arraycopy(popN, 0, popNold, 0, comm.nbrPatches);
 
@@ -446,14 +446,14 @@ void adjustFitness(int p, int d) {
             // p = patch[i];
             if (alive[i]) {
 // soft selection
-            // fit = (fitness[i] / maxFitness[p]);
+            fit = (fitness[i] / maxFitness[p]);
 // hard selection
                 // fit = fitness[i];
 
-                if (Auxils.random.nextDouble() >= (1 - comm.d))
-                    removeInd(i);
-                // if (Auxils.random.nextDouble() >= (1 - comm.d) * fit)
+                // if (Auxils.random.nextDouble() >= (1 - comm.d))
                 //     removeInd(i);
+                if (Auxils.random.nextDouble() >= (1 - comm.d) * fit)
+                    removeInd(i);
                 // if (Auxils.random.nextDouble() >= (1 - comm.d) * Math.max(0., 1. - popNold[p]/(fit*comm.K)))
                 //     removeInd(i);
             }
@@ -537,22 +537,21 @@ void adjustFitness(int p, int d) {
         double contr = 0.;
         int p;
 
-        double fit = 1.;
+        // double fit = 1.;
 
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
             if (alive[i]) {
                 // hard selection
-                fit = fitness[i];
+                // fit = fitness[i];
                 // soft selection
                 // fit = (fitness[i] / maxFitness[p]);
                 // contr = 1;
                 // contr *= fit;
-                // contr = Math.max(0, 1 - popN[p]/(fitness[i]*comm.microsites));
-                contr = Math.max(0., 1. - popNold[p]/(fit * ((double) comm.K)));
-                // contr = Math.max(0., (1. - popNold[p] / ((double) comm.K))*fit);
-                // contr = Math.max(0., 1. - popNold[p]/((double) comm.K));
-
+                // contr = Math.max(0., 1. - popNold[p]/(fit * ((double) comm.K)));
+                // contr = Math.max(0., 1. - popNold[p]/(fit * ((double) comm.K) + 10. * (1. - fit)));
+                contr = Math.max(0., 1. - popNold[p]/((double) comm.K));
+                // contr = Math.max(0., (1. - popNold[p]/((double) comm.K)) * fit);
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
                 if (sexAdults[i]) {
                     fathersPos[p][endPosFathers[p]] = i;
@@ -1405,7 +1404,7 @@ class Init {
         genotype = new double[comm.nbrPatches][comm.traits];
 
         // Arrays.fill(N, (int) Math.round(0.6*comm.microsites));
-        Arrays.fill(N, comm.K);
+        Arrays.fill(N, Math.min(comm.K, comm.microsites));
 
         if (comm.envType.equals("REGIONAL")) {
             for (int d = 0; d < comm.envDims; d++) {
@@ -2109,5 +2108,3 @@ class Auxils {
         return result < 0 ? result + y : result;
     }
 }
-
-
