@@ -81,11 +81,12 @@ public class EvolSex {
                         //     // sites.seedSex(0.1, sexSeeds);
                         //     sites.seedSex2(0.05);
                         
-                        if (((t + 1) % (int) (1./comm.pChange[pc])) == 0)
-                        sites.changeEnvironment();
-                        // sites.changeEnvironment_fluct();
-                        // sites.changeEnvironment_pc(pc);
-                        // sites.changeEnvironment_norm(pc);
+                        if (((t + 1) % (int) (1./comm.pChange[pc])) == 0) {
+                            sites.changeEnvironment();
+                            // sites.changeEnvironment_fluct();
+                            // sites.changeEnvironment_pc(pc);
+                            // sites.changeEnvironment_norm(pc);
+                        }
                         sites.findMaxFitness();
                         sites.mortality();
                         if (comm.dispRate[dr] > 0) {
