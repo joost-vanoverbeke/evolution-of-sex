@@ -336,10 +336,15 @@ class Sites {
     }
 
     double calcFitness(int i, int tr) {
+        double fit, prop_alls;
         double phenot = traitPhenotype[i][tr];
         int dim = comm.traitDim[tr];
         double env = environment[patch[i]][dim] + patchEnv[i][dim];
-        return Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
+        fit =  Math.exp(-(Math.pow(phenot - env, 2)) / evol.divF);
+        prop_alls = calc_all_prop(i, tr);
+        // fit *= (1 - prop_homz);
+        fit *= prop_alls;
+        return fit;
     }
 
     double calcPSex(int i) {
@@ -1303,6 +1308,21 @@ void adjustFitness(int p, int d) {
         return var;
     }
 
+    double calc_prop_homz(int i, int tr) {
+        double p_h = 0.;
+        for (int l = 0; l < evol.lociPerTrait; l++) {
+            p_h += genotype[i][evol.traitMother[tr][l]] == genotype[i][evol.traitFather[tr][l]]? 1. : 0.;
+        }
+            p_h /= evol.lociPerTrait;
+            return p_h;
+    }
+
+    double calc_all_prop(int i, int tr) {
+        double unique_alls = 0.;
+        unique_alls = Auxils.countDistinct(Auxils.arrayElements(genotype[i], evol.traitGenes[tr]));
+        return unique_alls/(2.*evol.lociPerTrait);
+    }
+
 }
 
 
@@ -1763,6 +1783,27 @@ class Auxils {
     }
 
     static int countDistinct(int[] arr) {
+        // First sort the array so that all
+        // occurrences become consecutive
+        Arrays.sort(arr);
+
+        // Traverse the sorted array
+        int n = arr.length;
+        int res = 0;
+        for (int i = 0; i < n; i++) {
+
+            // Move the index ahead while
+            // there are duplicates
+            while (i < n - 1 &&
+                    arr[i] == arr[i + 1]) {
+                i++;
+            }
+            res++;
+        }
+        return res;
+    }
+
+    static int countDistinct(short[] arr) {
         // First sort the array so that all
         // occurrences become consecutive
         Arrays.sort(arr);
