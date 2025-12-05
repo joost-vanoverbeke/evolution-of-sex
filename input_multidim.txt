@@ -10,23 +10,25 @@ ENVDIMS		        16											number of niche dimensions (default = 1)
 TRAITS		        16											number of traits (default = 2)
 MINENV              -1                                      	minimum environmental value (between 0 and 1) (default = 0.2)
 MAXENV              1                                      	maximum environmental value (between 0 and 1) (default = 0.8)
-MICROSITES          750    										number of microsites in each patch (default = 600)
-K                   500
+MICROSITES          7500   										number of microsites in each patch (default = 600)
+K                   5000
 D                   0.1                                      	mortality rate (default = 0.1)
 R                   5
 PSEX 	        1   0.											initial probability of sexual reproduction (default = 0)
 COST			1	0.5											demographic cost of sexual reproduction (default = 0.5)
-PATCHES             20                                        	number of patches = gridsize^2 (default = 2)
-ENVTYPE				REGIONAL
-// ENVTYPE				LOCAL
+PATCHES             1                                        	number of patches = gridsize^2 (default = 2)
+// ENVTYPE				REGIONAL
+ENVTYPE				LOCAL
 PCHANGE		    1   0.1										probability of environmental change along each niche dimension (default = 0.1)
-ENVSTEP		    1   0.1									    step size of environmental change (default = 0.01)
-M               1   2e-3	                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
+// ENVSTEP		    7   0.001 0.0025 0.005 0.01 0.025 0.05 0.1									    step size of environmental change (default = 0.01)
+ENVSTEP		    5   0.001 0.01 0.02 0.03 0.04									    step size of environmental change (default = 0.01)
+// M               1   2e-3	                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
+M               1   0.	                     			    dispersal rate between patches (should be set to 0 if gridsize = 1 (one patch)) (default = 0.01)
 
 evolution parameters
-OMEGAE              0.25                                     	niche tolerance (default = 0.02)
+OMEGAE              0.3                                     	niche tolerance (default = 0.02)
 TRAITLOCI           160                                       	total number of diploid loci coding for traits (default = 20 => 10 for each of 2 default trait)
-MU                  1e-4                                     	mutation rate (default = 1e-4)
+MU                  1e-3                                     	mutation rate (default = 1e-4)
 SEXTYPE             SWITCH
 SEXLOCI		        1                                          number of diploid loci coding the probability of sex (default = 10)
 MUSEX               1e-5                                    	mutation rate (default = 1e-4)
@@ -41,8 +43,8 @@ SIGMAZ              0.01                                     	phenotypic standar
 
 
 run parameters
-RUNS                1                                        	number of replicate runs (default = 1)
-TIMESTEPS           2000                                  	number of time steps in a run (default = 10000)
-PRINTSTEPS          1000		                               	time steps between console output (default = 100)
+RUNS                5                                        	number of replicate runs (default = 1)
+TIMESTEPS           50000                                  	number of time steps in a run (default = 10000)
+PRINTSTEPS          10000		                               	time steps between console output (default = 100)
 SAVESTEPS           1000                                 	time steps between generation of output (default = 1000)
-OUTPUT              results_softmort_regional_OE25e-2_r5_range2_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
+OUTPUT              results_softmort_patch1_K5000_negfeedstep_mut1e-3_OE0.3_r5_range2_dim16.csv			  destination of output file (default = output_evolvingMetacommunity.csv)
