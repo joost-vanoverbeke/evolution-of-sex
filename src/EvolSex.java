@@ -82,10 +82,11 @@ public class EvolSex {
                         //     sites.seedSex2(0.05);
                         
                         if (((t + 1) % (int) (1./comm.pChange[pc])) == 0) {
-                            sites.changeEnvironment();
+                            // sites.changeEnvironment();
                             // sites.changeEnvironment_fluct();
                             // sites.changeEnvironment_pc(pc);
                             // sites.changeEnvironment_norm(pc);
+                            sites.changeEnvironment_runaway();
                         }
                         sites.findMaxFitness();
                         sites.mortality();
@@ -459,6 +460,108 @@ void changeEnvironment_norm(int pc) {
         }
     }
 }
+
+
+void changeEnvironment_runaway() {
+    boolean globalEnv = comm.envType.equals("REGIONAL");
+    double step;
+    double traitFtp = 0, meanFtp = 0, varFtp = 0, envDist = 0;
+    int tr, n_tr = 0, sgn = 1;
+
+    if (globalEnv) {
+        for (int d = 0; d < comm.envDims; d++) {
+            n_tr = 0;
+            meanFtp = varFtp = 0;
+            envDist = 1;
+            for (tr = 0; tr < comm.traits; tr++) {
+                if (comm.traitDim[tr] == d) {
+                    n_tr++;
+                }
+            }
+            for (tr = 0; tr < comm.traits; tr++) {
+                if (comm.traitDim[tr] == d) {
+                    for (int p = 0; p < comm.nbrPatches; p++) {
+                        // n_tr++;
+                        traitFtp = phenotypeMean(p, tr);
+                        meanFtp += traitFtp;
+                        varFtp += phenotypeVar(p, tr);
+                        envDist *= Math.exp(-(Math.pow(environment[p][d] - traitFtp, 2)) / (2 * Math.pow(Math.sqrt(n_tr) * evol.omegaE, 2)));
+                        // envDist += Math.pow(environment[p][d] - traitFtp, 2);
+                    }
+                }
+            }
+            meanFtp /= (n_tr*comm.nbrPatches);
+            varFtp /= (n_tr*comm.nbrPatches);
+            // envDist = Math.sqrt(envDist/(n_tr*comm.nbrPatches));
+            // envDist = Math.exp(- envDist / (2 * Math.pow(2 * evol.omegaE, 2)));
+            
+            sgn = environment[0][d] <= meanFtp ? -1 : 1;
+            sgn = Auxils.random.nextDouble() >= (0.5 + envDist/3.33) ? -sgn : sgn;
+            
+            step = comm.envStep[esPos] * sgn;
+            for (int p = 0; p < comm.nbrPatches; p++) {
+                environment[p][d] = environment[p][d] + step;
+                environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+                adjustFitness(p, d);
+            }
+        }
+    } else {
+        for (int p = 0; p < comm.nbrPatches; p++) {
+            for (int d = 0; d < comm.envDims; d++) {
+                n_tr = 0;
+                meanFtp = varFtp = 0;
+                envDist = 1;
+                for (tr = 0; tr < comm.traits; tr++) {
+                    if (comm.traitDim[tr] == d) {
+                        n_tr++;
+                    }
+                }
+                for (tr = 0; tr < comm.traits; tr++) {
+                    if (comm.traitDim[tr] == d) {
+                        // n_tr++;
+                        traitFtp = phenotypeMean(p, tr);
+                        meanFtp += traitFtp;
+                        varFtp += phenotypeVar(p, tr);
+                        envDist *= Math.exp(-(Math.pow(environment[p][d] - traitFtp, 2)) / (2 * Math.pow(Math.sqrt(n_tr) * evol.omegaE, 2)));
+                        // envDist += Math.pow(environment[p][d] - traitFtp, 2);
+                    }
+                }
+                meanFtp /= n_tr;
+                varFtp /= n_tr;
+                // envDist = Math.sqrt(envDist/n_tr);
+                // // envDist = Math.exp(-(Math.pow(environment[p][d] - meanFtp, 2)) / evol.divF);
+                // // envDist = Math.exp(-(Math.pow(environment[p][d] - meanFtp, 2)) / (2 * Math.pow(evol.omegaE, 2)));
+                // envDist = Math.exp(- envDist / (2 * Math.pow(2 * evol.omegaE, 2)));
+                
+                // envDist = Math.exp(-(Math.pow((environment[p][d] - meanFtp), 2)*varFtp) / evol.divF);
+                
+                sgn = environment[p][d] <= meanFtp ? -1 : 1;
+                sgn = Auxils.random.nextDouble() >= (0.5 + envDist/3.33) ? -sgn : sgn;
+                
+                // sgn = Auxils.random.nextDouble() >= envDist ? -sgn : sgn;
+                // step = (comm.envStep[esPos] * envDist * (environment[p][d] <= meanFtp ? -1 : 1))/Math.sqrt(varFtp);
+                
+                // step = comm.envStep[esPos] * envDist * sgn;
+                step = comm.envStep[esPos] * sgn;
+                
+                // step = (comm.envStep[esPos] + Auxils.gaussianSampler.sample() * comm.envStep[esPos]) * envDist * sgn;
+                // step = (comm.envStep[esPos] * envDist + Auxils.gaussianSampler.sample() * comm.envStep[esPos]) * sgn;
+                // step = Math.abs(Auxils.gaussianSampler.sample() * comm.envStep[esPos]) * envDist * sgn;
+                // step = Math.abs(Auxils.gaussianSampler.sample() * comm.envStep[esPos]) * sgn;
+                
+                // step = (comm.envStep[esPos] * envDist * (Auxils.random.nextBoolean() ? -1 : 1));
+                // if (((environment[p][d] + step) > comm.maxEnv) || ((environment[p][d] + step) < comm.minEnv)) {
+                //     environment[p][d] = environment[p][d] - step;
+                // } else {
+                environment[p][d] = environment[p][d] + step;
+                // }
+                environment[p][d] = Auxils.adjustToRange(environment[p][d], comm.minEnv, comm.maxEnv);
+                adjustFitness(p, d);
+            }
+        }
+    }
+}
+
 
 void adjustFitness(int p, int d) {
         double oldFit;
