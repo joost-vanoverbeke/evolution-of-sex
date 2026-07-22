@@ -82,16 +82,24 @@ public class EvolSex {
                         //     sites.seedSex2(0.05);
                         
                         if (((t + 1) % (int) (1./comm.pChange[pc])) == 0) {
-                            // sites.changeEnvironment();
+                            sites.changeEnvironment();
                             // sites.changeEnvironment_fluct();
                             // sites.changeEnvironment_pc(pc);
                             // sites.changeEnvironment_norm(pc);
-                            sites.changeEnvironment_runaway();
+                            // sites.changeEnvironment_runaway();
                         }
                         sites.findMaxFitness();
                         sites.mortality();
                         if (comm.dispRate[dr] > 0) {
                             sites.disperse();
+                        }
+                        // sites.findMaxFitness();
+                        // sites.mortality();
+                        if (t == 0 || ((t + 1) % run.printSteps) == 0) {
+                            sites.findMaxFitness();
+                            System.out.format("  time = %d; metacommunity N = %d; absFit = %.2f; relFit = %.2f; pSex = %.2f%n",
+                            (t + 1), sites.metapopSize(), sites.absFitnessMean(), sites.relFitnessMean(), sites.pSex());
+                            //                                        System.out.format("    migrationcounter = %s%n", Arrays.toString(sites.migrationCounter));
                         }
                         sites.contributionAdults();
                         sites.reproduction();
@@ -188,6 +196,7 @@ class Sites {
 
     int[] patch;
     boolean[] alive;
+    boolean[] isjuv;
     double[][] traitGenotype;
     double[][] traitPhenotype;
     double[][] traitFitness;
@@ -237,6 +246,7 @@ class Sites {
 
         patch = new int[totSites];
         alive = new boolean[totSites];
+        isjuv = new boolean[totSites];
         traitGenotype = new double[totSites][comm.traits];
         traitPhenotype = new double[totSites][comm.traits];
         traitFitness = new double[totSites][comm.traits];
@@ -287,6 +297,7 @@ class Sites {
             int[] posInds = Auxils.arraySample(init.N[p], Auxils.enumArray(p * comm.microsites, ((p + 1) * comm.microsites) - 1));
             for (int m : posInds) {
                 alive[m] = true;
+                isjuv[m] = true;
                 popN[p]++;
                 fitness[m] = 1;
                 for (int tr = 0; tr < comm.traits; tr++) {
@@ -602,6 +613,10 @@ void adjustFitness(int p, int d) {
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
             if (alive[i]) {
+
+
+                // if (!isjuv[i])
+                //     removeInd(i);
 // soft selection
             fit = (fitness[i] / maxFitness[p]);
 // hard selection
@@ -611,7 +626,9 @@ void adjustFitness(int p, int d) {
                 //     removeInd(i);
                 if (Auxils.random.nextDouble() >= (1 - comm.d) * fit)
                     removeInd(i);
-                // if (Auxils.random.nextDouble() >= (1 - comm.d) * Math.max(0., 1. - popNold[p]/(fit*comm.K)))
+                // if (Auxils.random.nextDouble() >= (1 - comm.d) * Math.max(0.01, 1. - popNold[p]/(fit*((double) comm.K))))
+                //     removeInd(i);
+                // if (Auxils.random.nextDouble() >= (1 - comm.d * popNold[p]/(fit*((double) comm.K))))
                 //     removeInd(i);
             }
         }
@@ -630,9 +647,11 @@ void adjustFitness(int p, int d) {
 
         for (int i = 0; i < totSites; i++) {
             if (alive[i]) {
-                if (Auxils.random.nextDouble() < comm.dispRate[drPos]) {
-                    posDisp[nbrDisp++] = i;
-                }
+                // if (isjuv[i]) {
+                    if (Auxils.random.nextDouble() < comm.dispRate[drPos]) {
+                        posDisp[nbrDisp++] = i;
+                    }
+                // }
             } else if (Auxils.random.nextDouble() < pEmpty[patch[i]]) {
                 posDisp[nbrDisp++] = i;
             }
@@ -670,6 +689,7 @@ void adjustFitness(int p, int d) {
 
                     System.arraycopy(genotype[oldPos], 0, genotype[newPos], 0, 2 * evol.allLoci);
                     settleRest(newPos, oldPos);
+                    isjuv[newPos] = isjuv[oldPos];
                     removeInd(oldPos);
                 } else {
                     alive[newPos] = false;
@@ -679,6 +699,7 @@ void adjustFitness(int p, int d) {
             if (tempAlive) {
                 System.arraycopy(tempGen, 0, genotype[newPos], 0, 2 * evol.allLoci);
                 settleRest(newPos, dispShuffle[0]);
+                isjuv[newPos] = isjuv[dispShuffle[0]];
             } else {
                 alive[newPos] = false;
             }
@@ -699,15 +720,22 @@ void adjustFitness(int p, int d) {
         for (int i = 0; i < totSites; i++) {
             p = patch[i];
             if (alive[i]) {
+
+                isjuv[i] = false;
+
                 // hard selection
                 // fit = fitness[i];
                 // soft selection
                 // fit = (fitness[i] / maxFitness[p]);
+
                 // contr = 1;
+
                 // contr *= fit;
-                // contr = Math.max(0., 1. - popNold[p]/(fit * ((double) comm.K)));
+                // contr = Math.max(0.01, 1. - popNold[p]/(fit * ((double) comm.K)));
                 // contr = Math.max(0., 1. - popNold[p]/(fit * ((double) comm.K) + 10. * (1. - fit)));
+
                 contr = Math.max(0., 1. - popNold[p]/((double) comm.K));
+
                 // contr = Math.max(0., (1. - popNold[p]/((double) comm.K)) * fit);
                 sexAdults[i] = Auxils.random.nextDouble() <= pSex[i];
                 if (sexAdults[i]) {
@@ -726,7 +754,10 @@ void adjustFitness(int p, int d) {
             if (endPosMothers[p] > 0) {
                 System.arraycopy(mothersProb[p], 0, mothersCumProb[p], 0, endPosMothers[p]);
                 Auxils.arrayCumSum(mothersCumProb[p], endPosMothers[p]);
+
                 production[p] = mothersCumProb[p][endPosMothers[p] - 1] * comm.r;
+                // production[p] = popN[p] * comm.r;
+
                 Auxils.arrayDiv(mothersCumProb[p], endPosMothers[p], mothersCumProb[p][endPosMothers[p] - 1]);
             }
         }
@@ -739,6 +770,9 @@ void adjustFitness(int p, int d) {
         double prod;
 
         for (int p = 0; p < comm.nbrPatches; p++) {
+
+            // System.out.println("  pop: " + p + "; popsize: " + popN[p] + "; oldsize: " + popNold[p] + "; production: " + production[p]);
+
             if (production[p] > 0.) {
                 prod = (production[p] < 1) ? ((Auxils.random.nextDouble() < production[p]) ? 1. : 0.) : production[p];
 
@@ -800,6 +834,7 @@ void adjustFitness(int p, int d) {
     void settleRest(int pos, int m) {
         int p = patch[pos];
         alive[pos] = true;
+        isjuv[pos] = true;
         popN[p]++;
         if (patch[m] != p) {
             newMigrant(pos);
@@ -1561,7 +1596,7 @@ class Init {
         genotype = new double[comm.nbrPatches][comm.traits];
 
         // Arrays.fill(N, (int) Math.round(0.6*comm.microsites));
-        Arrays.fill(N, Math.min(comm.K, comm.microsites));
+        Arrays.fill(N, Math.min(comm.K/2, comm.microsites));
 
         if (comm.envType.equals("REGIONAL")) {
             for (int d = 0; d < comm.envDims; d++) {
